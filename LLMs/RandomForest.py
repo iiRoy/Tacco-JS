@@ -78,9 +78,6 @@ EXCLUDE_METRICS: list[str] = [
 CLASS_NAMES  = ["Type 1 (1)", "Type 2 (2)", "Type 3 (3)", "Type 4 (4)"]
 CLASS_LABELS = [1, 2, 3, 4]
 
-# Type 1 pairs are pre-classified by rule (Jaccard threshold) before reaching the RF.
-# The RF trains and evaluates only on Type 2 / 3 / 4.
-T1_RULE_THRESHOLD = 0.95
 
 # ─────────────────────────────────────────────
 #  Compare.js
@@ -323,41 +320,15 @@ def train_and_evaluate(
     else:
         active_names = METRIC_NAMES
 
-    # ── T1 rule-based pre-classification ──────────────────────
-    j_idx = active_names.index("Jaccard") if "Jaccard" in active_names else None
-    if j_idx is not None:
-        t1_mask        = X[:, j_idx] >= T1_RULE_THRESHOLD
-        t1_mask_unseen = (X_unseen[:, j_idx] >= T1_RULE_THRESHOLD
-                          if len(X_unseen) > 0 else np.zeros(0, dtype=bool))
-    else:
-        t1_mask        = y == 1
-        t1_mask_unseen = (y_unseen == 1
-                          if len(y_unseen) > 0 else np.zeros(0, dtype=bool))
-
-    # RF trains and evaluates only on T2/T3/T4
-    X_rf    = X[~t1_mask]
-    y_rf    = y[~t1_mask]
-    meta_rf = [m for m, k in zip(pair_meta, ~t1_mask) if k]
-
     has_unseen = len(X_unseen) > 0
-    if has_unseen:
-        X_rf_u    = X_unseen[~t1_mask_unseen]
-        y_rf_u    = y_unseen[~t1_mask_unseen]
-        meta_rf_u = [m for m, k in zip(meta_unseen, ~t1_mask_unseen) if k]
-    else:
-        X_rf_u, y_rf_u, meta_rf_u = X_unseen, y_unseen, meta_unseen
-
-    RF_LABELS = [2, 3, 4]
-    RF_NAMES  = ["Type 2 (2)", "Type 3 (3)", "Type 4 (4)"]
-    n_feats   = X_rf.shape[1]
+    n_feats    = X.shape[1]
 
     print("\n" + "=" * 65)
     print(f"  TRAINING POOL SUMMARY  ({int(TRAIN_FILE_RATIO*100)}% of base files)")
     print("=" * 65)
-    print(f"  T1 rule  (Jaccard >= {T1_RULE_THRESHOLD})  : {t1_mask.sum()} pairs pre-classified")
-    print(f"  RF training pairs (T2/T3/T4) : {len(y_rf)}")
-    for label, name in zip(RF_LABELS, RF_NAMES):
-        print(f"    {name:<14}: {int((y_rf == label).sum())}")
+    print(f"  Total pairs loaded : {len(y)}")
+    for lbl in CLASS_LABELS:
+        print(f"    {CLASS_NAMES[lbl-1]:<14}: {int((y == lbl).sum())}")
     print(f"  Features ({n_feats})  : {active_names}")
     print(f"  Compare mode     : {COMPARE_MODE}")
     print(f"\n  Random Forest config:")
@@ -369,17 +340,17 @@ def train_and_evaluate(
     print(f"    oob_score      : {RF_OOB_SCORE}")
     print(f"    class_weight   : {RF_CLASS_WEIGHT if RF_CLASS_WEIGHT else 'None (uniform)'}")
 
-    if len(set(y_rf)) < 2:
-        print("\n[WARNING] Less than 2 classes in RF data — cannot train.")
+    if len(set(y)) < 2:
+        print("\n[WARNING] Less than 2 classes in data — cannot train.")
         return
 
     # ── Split ──────────────────────────────────────────────────
-    indices = list(range(len(y_rf)))
+    indices = list(range(len(y)))
     X_train, X_test, y_train, y_test, idx_train, idx_test = train_test_split(
-        X_rf, y_rf, indices,
+        X, y, indices,
         test_size=TEST_SIZE,
         random_state=RANDOM_STATE,
-        stratify=y_rf,
+        stratify=y,
     )
 
     # ── Scale ──────────────────────────────────────────────────
@@ -405,7 +376,7 @@ def train_and_evaluate(
 
     print("\n" + "=" * 65)
     print(f"  TRAINING  (RandomForest  n_trees={RF_N_ESTIMATORS}  "
-          f"max_features={RF_MAX_FEATURES}  — {n_feats} features  3 classes)")
+          f"max_features={RF_MAX_FEATURES}  — {n_feats} features  4 classes)")
     print("=" * 65)
     t0 = time.perf_counter()
     clf.fit(X_train_sc, y_train)
@@ -416,8 +387,8 @@ def train_and_evaluate(
     model_dir.mkdir(parents=True, exist_ok=True)
     joblib.dump(
         {"model": clf, "scaler": scaler,
-         "metric_names": METRIC_NAMES, "class_names": CLASS_NAMES,
-         "t1_threshold": T1_RULE_THRESHOLD},
+         "metric_names": METRIC_NAMES, "exclude_metrics": EXCLUDE_METRICS,
+         "class_names": CLASS_NAMES},
         model_dir / "random_forest_model.joblib",
     )
     print(f"  Modelo guardado en: {model_dir / 'random_forest_model.joblib'}")
@@ -429,25 +400,21 @@ def train_and_evaluate(
     y_pred = clf.predict(X_test_sc)
 
     print("\n" + "=" * 65)
-    print("  EVALUATION  (internal test set — 3 classes RF)")
+    print("  EVALUATION  (internal test set — 4 classes)")
     print("=" * 65)
-    print(f"  RF Accuracy (T2/T3/T4) : {accuracy_score(y_test, y_pred):.4f}\n")
+    print(f"  Accuracy : {accuracy_score(y_test, y_pred):.4f}\n")
     print(classification_report(y_test, y_pred,
-                                labels=RF_LABELS,
-                                target_names=RF_NAMES,
+                                labels=CLASS_LABELS,
+                                target_names=CLASS_NAMES,
                                 zero_division=0))
 
-    cm = confusion_matrix(y_test, y_pred, labels=RF_LABELS)
+    cm = confusion_matrix(y_test, y_pred, labels=CLASS_LABELS)
     print("  Confusion Matrix (rows=truth, cols=predicted):")
-    _print_confusion_3(cm)
+    _print_confusion(cm)
 
     print("\n  Accuracy by clone type (test pairs):")
-    # T1 rule accuracy on training pool
-    t1_true = y[t1_mask]
-    t1_acc  = float((t1_true == 1).mean()) if len(t1_true) > 0 else 1.0
-    print(f"    Type 1: {len(t1_true)} pairs  accuracy={t1_acc:.4f}  (rule-based)")
-    for ctype in RF_LABELS:
-        ct_idx = [i for i, idx in enumerate(idx_test) if meta_rf[idx][2] == ctype]
+    for ctype in CLASS_LABELS:
+        ct_idx = [i for i, idx in enumerate(idx_test) if pair_meta[idx][2] == ctype]
         if not ct_idx:
             print(f"    Type {ctype}: no test pairs")
             continue
@@ -463,92 +430,51 @@ def train_and_evaluate(
         bar = "█" * int(importances[i] * 40)
         print(f"    {active_names[i]:<22} {importances[i]:.4f} ± {std_imp[i]:.4f}  {bar}")
 
-    # ── n_estimators sensitivity ───────────────────────────────
-    print("\n" + "=" * 65)
-    print("  N_ESTIMATORS SENSITIVITY  (accuracy vs number of trees)")
-    print("=" * 65)
-    print(f"  {'trees':>6}   {'Test Acc':>9}   {'OOB Score':>10}")
-    for n_trees in [1, 5, 10, 20, 50, 100, 200]:
-        rf_n = RandomForestClassifier(
-            n_estimators=n_trees, criterion=RF_CRITERION,
-            max_depth=RF_MAX_DEPTH, max_features=RF_MAX_FEATURES,
-            bootstrap=RF_BOOTSTRAP, oob_score=oob,
-            class_weight=RF_CLASS_WEIGHT,
-            n_jobs=-1, random_state=RANDOM_STATE,
-        )
-        rf_n.fit(X_train_sc, y_train)
-        acc_n   = accuracy_score(y_test, rf_n.predict(X_test_sc))
-        oob_str = f"{rf_n.oob_score_:.4f}" if oob else "N/A"
-        marker  = "  ← current" if n_trees == RF_N_ESTIMATORS else ""
-        print(f"  {n_trees:>6}   {acc_n:>9.4f}   {oob_str:>10}{marker}")
-
     if show_tables:
         print("\n" + "=" * 65)
         print("  PER-PAIR RESULTS  (internal test set)")
         print("=" * 65)
         _print_header(with_truth=True)
         for i, idx in enumerate(idx_test):
-            base, clone, ctype = meta_rf[idx]
-            print(_verdict_line(base, clone, ctype, X_rf[idx], y_pred[i], truth=y_test[i]))
+            base, clone, ctype = pair_meta[idx]
+            print(_verdict_line(base, clone, ctype, X[idx], y_pred[i], truth=y_test[i]))
 
         print("\n" + "=" * 65)
         print("  FULL PREDICTION TABLE  (training pool)")
         print("=" * 65)
-        all_pred = clf.predict(scaler.transform(X_rf))
+        all_pred = clf.predict(scaler.transform(X))
         _print_header(with_truth=False)
-        for i, (base, clone, ctype) in enumerate(meta_rf):
-            print(_verdict_line(base, clone, ctype, X_rf[i], all_pred[i]))
+        for i, (base, clone, ctype) in enumerate(pair_meta):
+            print(_verdict_line(base, clone, ctype, X[i], all_pred[i]))
 
     # ── Unseen pool predictions ────────────────────────────────
     if has_unseen:
+        unseen_pred = clf.predict(scaler.transform(X_unseen))
         print("\n" + "=" * 65)
         print(f"  UNSEEN FILES PREDICTIONS  "
               f"(remaining {int((1-TRAIN_FILE_RATIO)*100)}%)")
         print("=" * 65)
+        print(f"  Accuracy : {accuracy_score(y_unseen, unseen_pred):.4f}\n")
+        print(classification_report(y_unseen, unseen_pred,
+                                    labels=CLASS_LABELS,
+                                    target_names=CLASS_NAMES,
+                                    zero_division=0))
+        cm_u = confusion_matrix(y_unseen, unseen_pred, labels=CLASS_LABELS)
+        _print_confusion(cm_u)
 
-        # T1 rule on unseen
-        t1_u_true = y_unseen[t1_mask_unseen]
-        t1_u_acc  = float((t1_u_true == 1).mean()) if len(t1_u_true) > 0 else 1.0
-        print(f"  T1 rule : {len(t1_u_true)} pairs  accuracy={t1_u_acc:.4f}")
-
-        # RF on unseen T2/T3/T4
-        if len(X_rf_u) > 0:
-            unseen_pred = clf.predict(scaler.transform(X_rf_u))
-
-            if len(set(y_rf_u)) >= 2:
-                rf_u_acc = accuracy_score(y_rf_u, unseen_pred)
-                print(f"  RF (T2/T3/T4) : {len(y_rf_u)} pairs  accuracy={rf_u_acc:.4f}\n")
-                print(classification_report(y_rf_u, unseen_pred,
-                                            labels=RF_LABELS,
-                                            target_names=RF_NAMES,
-                                            zero_division=0))
-                cm_u = confusion_matrix(y_rf_u, unseen_pred, labels=RF_LABELS)
-                _print_confusion_3(cm_u)
-            else:
-                print("  (Only one class in unseen RF labels — skipping metrics)\n")
-
-            if show_tables:
-                _print_header(with_truth=True)
-                for i, (base, clone, ctype) in enumerate(meta_rf_u):
-                    print(_verdict_line(base, clone, ctype, X_rf_u[i],
-                                        unseen_pred[i], truth=y_rf_u[i]))
+        if show_tables:
+            _print_header(with_truth=True)
+            for i, (base, clone, ctype) in enumerate(meta_unseen):
+                print(_verdict_line(base, clone, ctype, X_unseen[i],
+                                    unseen_pred[i], truth=y_unseen[i]))
 
     # ── Final accuracy summary ─────────────────────────────────
-    print("\n" + "=" * 65)
-    print("  FINAL ACCURACY SUMMARY  (T1 rule + Random Forest)")
-    print("=" * 65)
     acc_train = accuracy_score(y_train, clf.predict(X_train_sc))
     acc_test  = accuracy_score(y_test,  y_pred)
-    if has_unseen and len(X_rf_u) > 0:
-        all_unseen_pred = np.empty(len(y_unseen), dtype=int)
-        all_unseen_pred[t1_mask_unseen]  = 1
-        all_unseen_pred[~t1_mask_unseen] = clf.predict(scaler.transform(X_rf_u))
-        acc_combined = accuracy_score(y_unseen, all_unseen_pred)
-        print(f"  RF train={acc_train:.4f}  RF test={acc_test:.4f}  "
-              f"unseen combined={acc_combined:.4f}")
-        print(f"    (T1 rule={t1_u_acc:.4f}  RF T2/T3/T4={rf_u_acc:.4f})")
-    else:
-        print(f"  train={acc_train:.4f}  test={acc_test:.4f}")
+    print("\n" + "=" * 65)
+    print("  FINAL ACCURACY SUMMARY")
+    print("=" * 65)
+    print(f"  train={acc_train:.4f}  test={acc_test:.4f}")
 
 
 # ─────────────────────────────────────────────
