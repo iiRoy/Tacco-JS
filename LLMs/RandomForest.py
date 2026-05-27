@@ -27,19 +27,19 @@ META_CACHE    = CACHE_DIR / "rf_features_meta.json"
 
 CLONE_TYPES      = [1, 2, 3, 4]
 COMPARE_MODE     = 3  # 1=type, 2=value, 3=type-value
-TRAIN_FILE_RATIO = 0.20
+TRAIN_FILE_RATIO = 0.80
 TEST_SIZE        = 0.15
 RANDOM_STATE     = 42
 
-# Random Forest hyperparameters
-RF_N_ESTIMATORS      = 100
-RF_CRITERION         = "gini"
+# Random Forest hyperparameters  (best combo from sweep: T3 F1=0.7792, acc=0.8727)
+RF_N_ESTIMATORS      = 200
+RF_CRITERION         = "entropy"
 RF_MAX_DEPTH         = None
 RF_MIN_SAMPLES_SPLIT = 2
 RF_MIN_SAMPLES_LEAF  = 1
 RF_MAX_FEATURES      = "sqrt"
 RF_BOOTSTRAP         = True
-RF_CLASS_WEIGHT      = None
+RF_CLASS_WEIGHT      = {1: 1, 2: 1, 3: 2, 4: 1}  # T3x2: doble peso a T3
 RF_OOB_SCORE         = True
 
 # ─────────────────────────────────────────────
@@ -61,7 +61,17 @@ METRIC_NAMES = [
 # Features to exclude from training (edit this list to experiment).
 # The cache always stores all 28 features, so changing this list
 # does not require rebuilding the cache.
-EXCLUDE_METRICS: list[str] = []
+EXCLUDE_METRICS: list[str] = [
+    # Lexical — not in the target set
+    "Jaro", "JaroWinkler", "Overlap",
+    # Gaussian kernel — near-zero importance
+    "GaussManhattan", "GaussEuclidean", "GaussMinkowski", "GaussChebyshev",
+    # IR structural — excluded for this experiment
+    "IR_InstrCountRatio", "IR_LabelCountRatio", "IR_BranchCountRatio",
+    "IR_JumpCountRatio", "IR_AssignCountRatio", "IR_CallCountRatio",
+    "IR_RetCountRatio", "IR_TempCountRatio", "IR_FunctionCountRatio",
+    "IR_BranchDensity_A", "IR_BranchDensity_B", "IR_BranchDensityDiff",
+]
 
 
 CLASS_NAMES  = ["Type 1 (1)", "Type 2 (2)", "Type 3 (3)", "Type 4 (4)"]
