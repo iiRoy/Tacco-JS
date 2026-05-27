@@ -2,7 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { tokenizeFile, buildAST, normalizeAST } from "../Tokenizer/Tokenizer-Parser.js";
-import { buildIRFromFile, extractIRFeatures, IR_FEATURE_NAMES } from "../Tokenizer/ir.js";
+import { buildIRFromFile, extractIRFeatures, IR_FEATURE_NAMES,
+         extractCFGFeatures, CFG_FEATURE_NAMES } from "../Tokenizer/ir.js";
 
 /*
   ============================================================
@@ -674,12 +675,16 @@ function compareTwoFiles(fileA, fileB, options = {}) {
   const astSims   = astSimilarities(astSeqA, astSeqB);
 
   // IR-based structural features (must be computed before use in metrics/vector)
-  const irA          = buildIRFromFile(normalizedFileA);
-  const irB          = buildIRFromFile(normalizedFileB);
-  const irFeatureVec = extractIRFeatures(irA, irB);
+  const irA           = buildIRFromFile(normalizedFileA);
+  const irB           = buildIRFromFile(normalizedFileB);
+  const irFeatureVec  = extractIRFeatures(irA, irB);
+  const cfgFeatureVec = extractCFGFeatures(irA, irB);
 
   const irFeatureMap = Object.fromEntries(
     IR_FEATURE_NAMES.map((name, i) => [name, irFeatureVec[i]])
+  );
+  const cfgFeatureMap = Object.fromEntries(
+    CFG_FEATURE_NAMES.map((name, i) => [name, cfgFeatureVec[i]])
   );
 
   const metrics = {
@@ -716,6 +721,7 @@ function compareTwoFiles(fileA, fileB, options = {}) {
     normASTJaccard:  astSims.normASTJaccard,
     normASTLCSRatio: astSims.normASTLCSRatio,
     normASTCosine:   astSims.normASTCosine,
+    ...cfgFeatureMap,
   };
 
   const similarityFeatureVector = [
@@ -739,6 +745,7 @@ function compareTwoFiles(fileA, fileB, options = {}) {
     metrics.normASTJaccard,
     metrics.normASTLCSRatio,
     metrics.normASTCosine,
+    ...cfgFeatureVec,
   ];
 
   return {

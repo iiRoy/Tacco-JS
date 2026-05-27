@@ -849,6 +849,47 @@ export function extractIRFeatures(irA, irB) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SECTION 5b — CFG FEATURE EXTRACTION
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const CFG_FEATURE_NAMES = [
+  "CFG_NodeCountRatio",   // ratio of basic-block counts
+  "CFG_EdgeCountRatio",   // ratio of CFG edge counts
+  "CFG_CyclomaticRatio",  // ratio of cyclomatic complexity (E - N + 2)
+];
+
+/**
+ * Compute 3 CFG-level similarity features between two IR results.
+ * All features are min/max ratios in [0, 1].
+ *
+ * @param {IRResult} irA
+ * @param {IRResult} irB
+ * @returns {number[]}  3 floats in [0, 1].
+ */
+export function extractCFGFeatures(irA, irB) {
+  function cfgStats(ir) {
+    const cfg = buildCFGFromIR(ir);
+    const n   = cfg.nodes.length;
+    const e   = cfg.nodes.reduce((s, nd) => s + nd.successors.length, 0);
+    return { n, e, cc: Math.max(1, e - n + 2) };
+  }
+
+  function ratio(a, b) {
+    const mx = Math.max(a, b);
+    return mx === 0 ? 1.0 : Math.min(a, b) / mx;
+  }
+
+  const sA = cfgStats(irA);
+  const sB = cfgStats(irB);
+
+  return [
+    ratio(sA.n,  sB.n),
+    ratio(sA.e,  sB.e),
+    ratio(sA.cc, sB.cc),
+  ];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SECTION 6 — CLI
 // ─────────────────────────────────────────────────────────────────────────────
 

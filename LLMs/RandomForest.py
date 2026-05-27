@@ -31,9 +31,9 @@ TRAIN_FILE_RATIO = 0.80
 TEST_SIZE        = 0.15
 RANDOM_STATE     = 42
 
-# Random Forest hyperparameters  (best combo from sweep: T3 F1=0.7792, acc=0.8727)
+# Random Forest hyperparameters  (best combo from sweep: T3 F1=0.7987, acc=0.8819)
 RF_N_ESTIMATORS      = 200
-RF_CRITERION         = "entropy"
+RF_CRITERION         = "gini"
 RF_MAX_DEPTH         = None
 RF_MIN_SAMPLES_SPLIT = 2
 RF_MIN_SAMPLES_LEAF  = 1
@@ -43,7 +43,7 @@ RF_CLASS_WEIGHT      = {1: 1, 2: 1, 3: 2, 4: 1}  # T3x2: doble peso a T3
 RF_OOB_SCORE         = True
 
 # ─────────────────────────────────────────────
-#  Features  (16 lexical + 12 IR + 3 NormAST = 31 total)
+#  Features  (16 lexical + 12 IR + 3 NormAST + 3 CFG = 34 total)
 # ─────────────────────────────────────────────
 
 METRIC_NAMES = [
@@ -56,6 +56,7 @@ METRIC_NAMES = [
     "IR_RetCountRatio", "IR_TempCountRatio", "IR_FunctionCountRatio",
     "IR_BranchDensity_A", "IR_BranchDensity_B", "IR_BranchDensityDiff",
     "NormASTJaccard", "NormASTLCSRatio", "NormASTCosine",
+    "CFG_NodeCountRatio", "CFG_EdgeCountRatio", "CFG_CyclomaticRatio",
 ]
 
 # Features to exclude from training (edit this list to experiment).
