@@ -52,10 +52,10 @@ RANDOM_STATE = 42
 TEST_SIZE    = 0.15
 
 RF_PARAMS = dict(
-    n_estimators     = 200,
-    criterion        = "gini",
+    n_estimators     = 500,
+    criterion        = "entropy",
     max_features     = "sqrt",
-    class_weight     = {1: 1, 2: 1, 3: 2, 4: 1},
+    class_weight     = {1: 1, 2: 1, 3: 3, 4: 1},
     min_samples_leaf = 1,
     n_jobs           = 1,
     random_state     = RANDOM_STATE,

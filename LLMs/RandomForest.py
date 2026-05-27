@@ -31,15 +31,15 @@ TRAIN_FILE_RATIO = 0.80
 TEST_SIZE        = 0.15
 RANDOM_STATE     = 42
 
-# Random Forest hyperparameters  (best combo from sweep: T3 F1=0.7987, acc=0.8819)
-RF_N_ESTIMATORS      = 200
-RF_CRITERION         = "gini"
+# Random Forest hyperparameters  (best combo from sweep: T3 F1=0.8326, acc=0.9132)
+RF_N_ESTIMATORS      = 500
+RF_CRITERION         = "entropy"
 RF_MAX_DEPTH         = None
 RF_MIN_SAMPLES_SPLIT = 2
 RF_MIN_SAMPLES_LEAF  = 1
 RF_MAX_FEATURES      = "sqrt"
 RF_BOOTSTRAP         = True
-RF_CLASS_WEIGHT      = {1: 1, 2: 1, 3: 2, 4: 1}  # T3x2: doble peso a T3
+RF_CLASS_WEIGHT      = {1: 1, 2: 1, 3: 3, 4: 1}  # T3x3: triple peso a T3
 RF_OOB_SCORE         = True
 
 # ─────────────────────────────────────────────
