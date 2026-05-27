@@ -22,23 +22,23 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 # ─────────────────────────────────────────────
 
 COMPARE_JS = Path("Vectorization/compare.js")
-BASE_DIR = Path("dataset/dataset general/js_files")
-CLONES_DIR = Path("dataset/dataset general/clones")
-
-CACHE_DIR = Path(".cache")
-FEATURE_CACHE = CACHE_DIR / "features_cache.npz"
-META_CACHE = CACHE_DIR / "features_meta.json"
+BASE_DIR = Path("dataset/dataset solutions/js_files")
+CLONES_DIR = Path("dataset/dataset solutions/clones")
 
 
 # ─────────────────────────────────────────────
 #  Config
 # ─────────────────────────────────────────────
 
-CLONE_TYPES = [1, 2, 3]
-COMPARE_MODE = 1  # 1=type, 2=value, 3=type-value
+CACHE_DIR = Path(".cache")
+FEATURE_CACHE = CACHE_DIR / "features_cache.npz"
+META_CACHE = CACHE_DIR / "features_meta.json"
+
+CLONE_TYPES = [1, 2, 3, 4]
+COMPARE_MODE = 3  # 1=type, 2=value, 3=type-value
 PLAGIARISM_THRESHOLD = 0.5
-TRAIN_FILE_RATIO = 0.10
-TEST_SIZE = 0.15
+TRAIN_FILE_RATIO = 0.20
+TEST_SIZE = 0.20
 RANDOM_STATE = 42
 
 # Ratio of negative non-clone pairs to generate per base file
@@ -50,7 +50,6 @@ METRIC_NAMES = [
     "GaussManhattan", "GaussEuclidean", "GaussMinkowski", "GaussChebyshev",
     "LengthRatio", "VocabularyRatio",
 ]
-
 
 # ─────────────────────────────────────────────
 #  Helpers
@@ -626,13 +625,14 @@ def main():
     _orig_stdout = sys.stdout
     sys.stdout = _Tee(_orig_stdout, _log_file)
     try:
-        _main_body()
+        _main_body(args)
     finally:
         sys.stdout = _orig_stdout
         _log_file.close()
     _orig_stdout.write(f"\n[LOG] {log_path}\n")
 
-def _main_body():
+def _main_body(args):
+
     if not COMPARE_JS.exists():
         print(f"\n[ERROR] compare.js not found: {COMPARE_JS}")
         return
