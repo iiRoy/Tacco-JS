@@ -215,7 +215,11 @@ def train_and_evaluate(X, y, X_unseen, y_unseen):
         X_act, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y,
     )
 
-    # XGBoost — labels 1..4 are handled automatically by XGBClassifier
+    # XGBoost requires 0-indexed labels internally
+    y_train_xgb  = y_train - 1
+    y_val_xgb    = y_val - 1
+    y_unseen_xgb = y_unseen - 1
+
     clf = XGBClassifier(
         n_estimators      = XGB_N_ESTIMATORS,
         learning_rate     = XGB_LEARNING_RATE,
@@ -236,11 +240,11 @@ def train_and_evaluate(X, y, X_unseen, y_unseen):
     print(f"  TRAINING  (XGBoost — {len(active_idx)} features)")
     print("=" * 65)
     t0 = time.perf_counter()
-    clf.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
+    clf.fit(X_train, y_train_xgb, eval_set=[(X_val, y_val_xgb)], verbose=False)
     print(f"  Training completed in {time.perf_counter() - t0:.2f}s.")
 
     # ── Internal validation ────────────────────────────────────
-    y_pred = clf.predict(X_val)
+    y_pred = clf.predict(X_val) + 1  # back to 1-indexed
     print("\n" + "=" * 65)
     print("  EVALUATION  (internal validation set)")
     print("=" * 65)
@@ -259,7 +263,7 @@ def train_and_evaluate(X, y, X_unseen, y_unseen):
 
     # ── Unseen evaluation ──────────────────────────────────────
     if len(X_unseen_act) > 0:
-        unseen_pred = clf.predict(X_unseen_act)
+        unseen_pred = clf.predict(X_unseen_act) + 1  # back to 1-indexed
         print("\n" + "=" * 65)
         print(f"  UNSEEN FILES  (remaining {int((1 - TRAIN_FILE_RATIO) * 100)}%)")
         print("=" * 65)

@@ -33,13 +33,13 @@ RANDOM_STATE     = 42
 
 # Random Forest hyperparameters  (best combo from sweep: T3 F1=0.8326, acc=0.9132)
 RF_N_ESTIMATORS      = 500
-RF_CRITERION         = "entropy"
+RF_CRITERION         = "gini"
 RF_MAX_DEPTH         = None
 RF_MIN_SAMPLES_SPLIT = 2
 RF_MIN_SAMPLES_LEAF  = 1
 RF_MAX_FEATURES      = "sqrt"
 RF_BOOTSTRAP         = True
-RF_CLASS_WEIGHT      = {1: 1, 2: 1, 3: 3, 4: 1}  # T3x3: triple peso a T3
+RF_CLASS_WEIGHT      = None 
 RF_OOB_SCORE         = True
 
 # ─────────────────────────────────────────────
@@ -62,17 +62,7 @@ METRIC_NAMES = [
 # Features to exclude from training (edit this list to experiment).
 # The cache always stores all 28 features, so changing this list
 # does not require rebuilding the cache.
-EXCLUDE_METRICS: list[str] = [
-    # Lexical — not in the target set
-    "Jaro", "JaroWinkler", "Overlap",
-    # Gaussian kernel — near-zero importance
-    "GaussManhattan", "GaussEuclidean", "GaussMinkowski", "GaussChebyshev",
-    # IR structural — excluded for this experiment
-    "IR_InstrCountRatio", "IR_LabelCountRatio", "IR_BranchCountRatio",
-    "IR_JumpCountRatio", "IR_AssignCountRatio", "IR_CallCountRatio",
-    "IR_RetCountRatio", "IR_TempCountRatio", "IR_FunctionCountRatio",
-    "IR_BranchDensity_A", "IR_BranchDensity_B", "IR_BranchDensityDiff",
-]
+EXCLUDE_METRICS: list[str] = []
 
 
 CLASS_NAMES  = ["Type 1 (1)", "Type 2 (2)", "Type 3 (3)", "Type 4 (4)"]
@@ -474,7 +464,10 @@ def train_and_evaluate(
     print("\n" + "=" * 65)
     print("  FINAL ACCURACY SUMMARY")
     print("=" * 65)
-    print(f"  train={acc_train:.4f}  test={acc_test:.4f}")
+    print(f"  Entrenamiento (datos vistos)          : {acc_train:.4f}  ← esperable ~1.0, el modelo memorizó")
+    print(f"  Validación interna (15% del 80%)      : {acc_test:.4f}  ← holdout interno, ajuste del modelo")
+    if has_unseen:
+        print(f"  Unseen (20% archivos separados)       : {accuracy_score(y_unseen, clf.predict(scaler.transform(X_unseen))):.4f}  ← evaluación real, nunca visto")
 
 
 # ─────────────────────────────────────────────
