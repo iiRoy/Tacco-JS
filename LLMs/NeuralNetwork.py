@@ -18,8 +18,8 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 # ─────────────────────────────────────────────
 
 COMPARE_JS = Path("Vectorization/compare.js")
-BASE_DIR   = Path("dataset/dataset general/js_files")
-CLONES_DIR = Path("dataset/dataset general/clones")
+BASE_DIR   = Path("dataset/dataset solutions/js_files")
+CLONES_DIR = Path("dataset/dataset solutions/clones")
 
 CACHE_DIR     = Path(".cache")
 FEATURE_CACHE = CACHE_DIR / "mlp_features_cache.npz"
@@ -27,7 +27,7 @@ META_CACHE    = CACHE_DIR / "mlp_features_meta.json"
 
 CLONE_TYPES      = [1, 2, 3, 4]
 COMPARE_MODE     = 3  # 1=type, 2=value, 3=type-value
-TRAIN_FILE_RATIO = 0.20
+TRAIN_FILE_RATIO = 0.80
 TEST_SIZE        = 0.15
 RANDOM_STATE     = 42
 
@@ -42,7 +42,7 @@ MLP_EARLY_STOPPING = True        # Hold out 10% of train for early stopping
 MLP_BATCH_SIZE     = "auto"
 
 # ─────────────────────────────────────────────
-#  Features  (16 lexical + 12 IR + 3 NormAST = 31 total)
+#  Features  (16 lexical + 12 IR + 3 NormAST + 3 CFG = 34 total)
 # ─────────────────────────────────────────────
 
 METRIC_NAMES = [
@@ -55,12 +55,19 @@ METRIC_NAMES = [
     "IR_RetCountRatio", "IR_TempCountRatio", "IR_FunctionCountRatio",
     "IR_BranchDensity_A", "IR_BranchDensity_B", "IR_BranchDensityDiff",
     "NormASTJaccard", "NormASTLCSRatio", "NormASTCosine",
+    "CFGNodeCountRatio", "CFGEdgeCountRatio", "CFGPathSimilarity",
 ]
 
-# Features to exclude from training (edit this list to experiment).
-# The cache always stores all 31 features, so changing this list
-# does not require rebuilding the cache.
-EXCLUDE_METRICS: list[str] = []
+# Features to exclude from training (cache stores all 34; changing this list
+# does not require rebuilding the cache).
+EXCLUDE_METRICS: list[str] = [
+    "GaussManhattan", "GaussEuclidean", "GaussMinkowski", "GaussChebyshev",
+    "IR_LabelCountRatio", "IR_JumpCountRatio", "IR_AssignCountRatio",
+    "IR_CallCountRatio", "IR_RetCountRatio", "IR_TempCountRatio",
+    "IR_FunctionCountRatio", "IR_BranchDensity_A", "IR_BranchDensity_B",
+    "IR_BranchDensityDiff",
+    "Jaro", "JaroWinkler", "Overlap", "LCSRatio", "VocabularyRatio",
+]
 
 CLASS_NAMES  = ["Type 1 (1)", "Type 2 (2)", "Type 3 (3)", "Type 4 (4)"]
 CLASS_LABELS = [1, 2, 3, 4]
@@ -480,14 +487,16 @@ def train_and_evaluate(
     print("=" * 65)
     acc_train = accuracy_score(y_train, clf.predict(X_train_sc))
     acc_test  = accuracy_score(y_test,  y_pred)
+    print(f"  Entrenamiento (datos vistos)          : {acc_train:.4f}"
+          f"  ← esperable ~1.0, el modelo memorizó")
+    print(f"  Validación interna (15% del 80%)      : {acc_test:.4f}"
+          f"  ← holdout interno, ajuste del modelo")
     if len(X_unseen) > 0:
         acc_unseen = accuracy_score(
             y_unseen, clf.predict(scaler.transform(X_unseen))
         )
-        print(f"  train={acc_train:.4f}  test={acc_test:.4f}  "
-              f"unseen={acc_unseen:.4f}")
-    else:
-        print(f"  train={acc_train:.4f}  test={acc_test:.4f}")
+        print(f"  Unseen (20% archivos separados)       : {acc_unseen:.4f}"
+              f"  ← evaluación real, nunca visto")
 
 
 # ─────────────────────────────────────────────
@@ -500,7 +509,7 @@ def main():
     global TRAIN_FILE_RATIO
 
     parser = argparse.ArgumentParser(
-        description="Plagiarism detector — MLP Neural Network, 31-feature compare.js."
+        description="Plagiarism detector — MLP Neural Network, 34-feature compare.js."
     )
     parser.add_argument("--hidden-layers",      type=str,   default="128,64",
                         help="Hidden layer sizes, e.g. '128,64' (default: 128,64).")

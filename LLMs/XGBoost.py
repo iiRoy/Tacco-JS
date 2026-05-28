@@ -248,8 +248,18 @@ def train_and_evaluate(X, y, X_unseen, y_unseen):
     )
 
     print("\n" + "=" * 65)
-    print(f"  TRAINING  (XGBoost  n_estimators={XGB_N_ESTIMATORS}  "
-          f"max_depth={XGB_MAX_DEPTH}  lr={XGB_LEARNING_RATE}  — {len(active_idx)} features)")
+    print(f"  XGBoost config:")
+    print(f"    n_estimators   : {XGB_N_ESTIMATORS}")
+    print(f"    learning_rate  : {XGB_LEARNING_RATE}")
+    print(f"    max_depth      : {XGB_MAX_DEPTH}")
+    print(f"    subsample      : {XGB_SUBSAMPLE}")
+    print(f"    colsample_tree : {XGB_COLSAMPLE}")
+    print(f"    reg_lambda     : {XGB_REG_LAMBDA}")
+    print(f"    objective      : multi:softmax  (4 clases)")
+    print(f"    tree_method    : hist")
+
+    print("\n" + "=" * 65)
+    print(f"  TRAINING  (XGBoost — {len(active_idx)} features, 4 classes)")
     print("=" * 65)
     t0 = time.perf_counter()
     clf.fit(X_train, y_train_xgb, eval_set=[(X_val, y_val_xgb)], verbose=False)
