@@ -194,6 +194,17 @@ def load_cache():
     return data["X"], data["y"], pair_meta, data["X_unseen"], data["y_unseen"], meta_unseen
 
 # ─────────────────────────────────────────────
+#  Output Helpers
+# ─────────────────────────────────────────────
+
+def _print_confusion(cm):
+    labels = ["Type1", "Type2", "Type3", "Type4"]
+    print(f"  {'':>14} " + " ".join(f"{l:>8}" for l in labels))
+    for i, name in enumerate(labels):
+        print(f"  {name:<14} " + " ".join(f"{cm[i, j]:>8}" for j in range(4)))
+
+
+# ─────────────────────────────────────────────
 #  Training & Evaluation
 # ─────────────────────────────────────────────
 
@@ -237,16 +248,19 @@ def train_and_evaluate(X, y, X_unseen, y_unseen):
     )
 
     print("\n" + "=" * 65)
-    print(f"  TRAINING  (XGBoost — {len(active_idx)} features)")
+    print(f"  TRAINING  (XGBoost  n_estimators={XGB_N_ESTIMATORS}  "
+          f"max_depth={XGB_MAX_DEPTH}  lr={XGB_LEARNING_RATE}  — {len(active_idx)} features)")
     print("=" * 65)
     t0 = time.perf_counter()
     clf.fit(X_train, y_train_xgb, eval_set=[(X_val, y_val_xgb)], verbose=False)
     print(f"  Training completed in {time.perf_counter() - t0:.2f}s.")
 
+    active_names = [n for n in METRIC_NAMES if n not in EXCLUDE_METRICS]
+
     # ── Internal validation ────────────────────────────────────
-    y_pred = clf.predict(X_val) + 1  # back to 1-indexed
+    y_pred = clf.predict(X_val) + 1
     print("\n" + "=" * 65)
-    print("  EVALUATION  (internal validation set)")
+    print("  EVALUATION  (internal test set — 4 classes)")
     print("=" * 65)
     print(f"  Accuracy : {accuracy_score(y_val, y_pred):.4f}\n")
     print(classification_report(y_val, y_pred,
@@ -254,23 +268,48 @@ def train_and_evaluate(X, y, X_unseen, y_unseen):
                                 labels=CLASS_LABELS, zero_division=0))
 
     cm = confusion_matrix(y_val, y_pred, labels=CLASS_LABELS)
-    print("  Confusion Matrix (rows=true, cols=pred):")
-    header = "           " + "".join(f"  T{l}" for l in CLASS_LABELS)
-    print(header)
-    for i, lbl in enumerate(CLASS_LABELS):
-        row = f"  True T{lbl} : " + "".join(f"  {cm[i,j]:>3}" for j in range(len(CLASS_LABELS)))
-        print(row)
+    print("  Confusion Matrix (rows=truth, cols=predicted):")
+    _print_confusion(cm)
+
+    print("\n  Accuracy by clone type (test pairs):")
+    for ctype in CLASS_LABELS:
+        mask = y_val == ctype
+        if mask.sum() == 0:
+            continue
+        acc = accuracy_score(y_val[mask], y_pred[mask])
+        print(f"    Type {ctype}: {int(mask.sum())} pairs  accuracy={acc:.4f}")
+
+    # ── Feature importances ────────────────────────────────────
+    importances = clf.feature_importances_
+    sorted_idx  = np.argsort(importances)[::-1]
+    print("\n  Feature importances:")
+    for i in sorted_idx:
+        bar = "█" * int(importances[i] * 40)
+        print(f"    {active_names[i]:<22} {importances[i]:.4f}  {bar}")
 
     # ── Unseen evaluation ──────────────────────────────────────
     if len(X_unseen_act) > 0:
-        unseen_pred = clf.predict(X_unseen_act) + 1  # back to 1-indexed
+        unseen_pred = clf.predict(X_unseen_act) + 1
         print("\n" + "=" * 65)
-        print(f"  UNSEEN FILES  (remaining {int((1 - TRAIN_FILE_RATIO) * 100)}%)")
+        print(f"  UNSEEN FILES PREDICTIONS  (remaining {int((1 - TRAIN_FILE_RATIO) * 100)}%)")
         print("=" * 65)
         print(f"  Accuracy : {accuracy_score(y_unseen, unseen_pred):.4f}\n")
         print(classification_report(y_unseen, unseen_pred,
                                     target_names=CLASS_NAMES,
                                     labels=CLASS_LABELS, zero_division=0))
+        cm_u = confusion_matrix(y_unseen, unseen_pred, labels=CLASS_LABELS)
+        _print_confusion(cm_u)
+
+    # ── Final accuracy summary ─────────────────────────────────
+    acc_train = accuracy_score(y_train, clf.predict(X_train) + 1)
+    acc_test  = accuracy_score(y_val, y_pred)
+    print("\n" + "=" * 65)
+    print("  FINAL ACCURACY SUMMARY")
+    print("=" * 65)
+    print(f"  Entrenamiento (datos vistos)          : {acc_train:.4f}  ← esperable ~1.0")
+    print(f"  Validación interna (15% del 80%)      : {acc_test:.4f}  ← holdout interno")
+    if len(X_unseen_act) > 0:
+        print(f"  Unseen (20% archivos separados)       : {accuracy_score(y_unseen, unseen_pred):.4f}  ← evaluación real")
 
     return clf
 
