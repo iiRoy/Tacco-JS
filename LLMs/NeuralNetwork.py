@@ -60,14 +60,7 @@ METRIC_NAMES = [
 
 # Features to exclude from training (cache stores all 34; changing this list
 # does not require rebuilding the cache).
-EXCLUDE_METRICS: list[str] = [
-    "GaussManhattan", "GaussEuclidean", "GaussMinkowski", "GaussChebyshev",
-    "IR_LabelCountRatio", "IR_JumpCountRatio", "IR_AssignCountRatio",
-    "IR_CallCountRatio", "IR_RetCountRatio", "IR_TempCountRatio",
-    "IR_FunctionCountRatio", "IR_BranchDensity_A", "IR_BranchDensity_B",
-    "IR_BranchDensityDiff",
-    "Jaro", "JaroWinkler", "Overlap", "LCSRatio", "VocabularyRatio",
-]
+EXCLUDE_METRICS: list[str] = []
 
 CLASS_NAMES  = ["Type 1 (1)", "Type 2 (2)", "Type 3 (3)", "Type 4 (4)"]
 CLASS_LABELS = [1, 2, 3, 4]
@@ -374,7 +367,8 @@ def train_and_evaluate(
     model_dir.mkdir(parents=True, exist_ok=True)
     joblib.dump(
         {"model": clf, "scaler": scaler,
-         "metric_names": METRIC_NAMES, "class_names": CLASS_NAMES},
+         "metric_names": METRIC_NAMES, "exclude_metrics": EXCLUDE_METRICS,
+         "class_names": CLASS_NAMES},
         model_dir / "neural_network_model.joblib",
     )
     print(f"  Modelo guardado en: {model_dir / 'neural_network_model.joblib'}")

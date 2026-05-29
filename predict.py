@@ -82,6 +82,9 @@ def main():
     clf = bundle["model"]
     scaler = bundle.get("scaler")
     class_names = bundle.get("class_names")
+    metric_names = bundle.get("metric_names")
+    exclude_metrics = bundle.get("exclude_metrics", [])
+    label_offset = bundle.get("label_offset", 0)
 
     X_new = get_similarity_vector(
         args.file_a,
@@ -89,20 +92,21 @@ def main():
         args.compare_mode,
     )
 
+    if metric_names is not None and exclude_metrics:
+        active_idx = [i for i, n in enumerate(metric_names) if n not in exclude_metrics]
+        X_new = X_new[:, active_idx]
+
     print("Vector usado:", X_new.tolist()[0])
 
     if scaler is not None:
         X_new = scaler.transform(X_new)
 
-    pred = clf.predict(X_new)[0]
+    pred = int(clf.predict(X_new)[0]) + label_offset
 
     if class_names is not None:
-        try:
-            print("Resultado:", class_names[int(pred)])
-        except Exception:
-            print("Resultado:", class_names[pred])
+        print("Resultado:", class_names[pred - 1])
     else:
-        print("Resultado:", DEFAULT_CLASS_NAMES.get(int(pred), f"Clase desconocida: {pred}"))
+        print("Resultado:", DEFAULT_CLASS_NAMES.get(pred, f"Clase desconocida: {pred}"))
 
 
 if __name__ == "__main__":

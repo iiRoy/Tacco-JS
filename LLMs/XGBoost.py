@@ -4,6 +4,7 @@ import subprocess
 import argparse
 import time
 import os
+import joblib
 import numpy as np
 
 from pathlib import Path
@@ -55,14 +56,7 @@ METRIC_NAMES = [
     "CFG_NodeCountRatio", "CFG_EdgeCountRatio", "CFG_CyclomaticRatio",
 ]
 
-EXCLUDE_METRICS: list[str] = [
-    "Jaro", "JaroWinkler", "Overlap",
-    "GaussManhattan", "GaussEuclidean", "GaussMinkowski", "GaussChebyshev",
-    "IR_InstrCountRatio", "IR_LabelCountRatio", "IR_BranchCountRatio",
-    "IR_JumpCountRatio", "IR_AssignCountRatio", "IR_CallCountRatio",
-    "IR_RetCountRatio", "IR_TempCountRatio", "IR_FunctionCountRatio",
-    "IR_BranchDensity_A", "IR_BranchDensity_B", "IR_BranchDensityDiff",
-]
+EXCLUDE_METRICS: list[str] = []
 
 CLASS_NAMES  = ["Type 1 (1)", "Type 2 (2)", "Type 3 (3)", "Type 4 (4)"]
 CLASS_LABELS = [1, 2, 3, 4]
@@ -266,6 +260,17 @@ def train_and_evaluate(X, y, X_unseen, y_unseen):
     print(f"  Training completed in {time.perf_counter() - t0:.2f}s.")
 
     active_names = [n for n in METRIC_NAMES if n not in EXCLUDE_METRICS]
+
+    SCRIPT_DIR = Path(__file__).resolve().parent
+    model_dir  = SCRIPT_DIR / "Models"
+    model_dir.mkdir(parents=True, exist_ok=True)
+    joblib.dump(
+        {"model": clf, "scaler": None,
+         "metric_names": METRIC_NAMES, "exclude_metrics": EXCLUDE_METRICS,
+         "class_names": CLASS_NAMES, "label_offset": 1},
+        model_dir / "xgboost_model.joblib",
+    )
+    print(f"  Modelo guardado en: {model_dir / 'xgboost_model.joblib'}")
 
     # ── Internal validation ────────────────────────────────────
     y_pred = clf.predict(X_val) + 1

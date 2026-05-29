@@ -18,7 +18,7 @@ import { buildIRFromFile, extractIRFeatures, IR_FEATURE_NAMES,
   /home/rodrigo/Documentos/Github/Tacco-JS/dataset/dataset general
 */
 
-const DATASET_ROOT = "./dataset/dataset general";
+const DATASET_ROOT = "./dataset/dataset solutions";
 
 /*
   BASE_CODE_ID:
@@ -863,6 +863,28 @@ function vectorize(O, CA, T, options = {}) {
 */
 
 function main() {
+  const args = process.argv.slice(2);
+
+  // Modo prediccion individual: node similarity.js fileA.js fileB.js [mode]
+  if (args.length >= 2 && args[0].endsWith(".js")) {
+    const fileA = args[0];
+    const fileB = args[1];
+    const rawMode = args[2] ?? String(VECTORIZE_MODE);
+    const MODE_MAP_LOCAL = { "1": "type", "2": "value", "3": "type-value" };
+    const mode = MODE_MAP_LOCAL[rawMode] ?? "type-value";
+
+    const result = compareTwoFiles(fileA, fileB, {
+      mode,
+      ngramSize: NGRAM_SIZE,
+      minkowskiP: MINKOWSKI_P,
+      sigma: SIGMA,
+    });
+
+    console.log(JSON.stringify(result.vector));
+    return;
+  }
+
+  // Modo dataset: usa IDs hardcodeados
   const result = vectorize(1000, 1001, VECTORIZE_MODE, {
     datasetRoot: DATASET_ROOT,
     ngramSize: NGRAM_SIZE,
