@@ -1,2 +1,0 @@
-const systemSettingsBlueprint = `{"couchdb":{"url":"https://couchserver:port/database","secureUrl":"https://username:password@couchserver:port/database","secondsToInvalidateEvents":120,"secondsToFlushVotes":10},"twilio":{"sid":"ACxxx","key":"yyy","smsWebhook":"https://nodeserver/vote/sms","voiceWebhook":"https://nodeserver/vote/voice","disableSigCheck":false},"cookiesecret":"make-this-a-secret"}`;
-module.exports = JSON.parse(systemSettingsBlueprint);

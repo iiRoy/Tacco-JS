@@ -1,2 +1,0 @@
-describe(".meiomask", function() {
-});

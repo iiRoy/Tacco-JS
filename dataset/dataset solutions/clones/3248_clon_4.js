@@ -1,10 +1,13 @@
-const initialValue = 2;
-const deltas = [2, -2, -2, 2, 4];
+'use strict';
 
-const generatedNumbers = deltas.reduce((accumulator, currentDelta) => {
-  const lastNumber = accumulator[accumulator.length - 1];
-  accumulator.push(lastNumber + currentDelta);
-  return accumulator;
-}, [initialValue]);
+const [x, op, y] = require('fs')
+   .readFileSync('/dev/stdin', 'utf8')
+   .trim()
+   .split(/\s+/);
 
-console.log(generatedNumbers.join('\n'));
+const operations = {
+   '+': (a, b) => a + b,
+   '-': (a, b) => a - b
+};
+
+console.log(operations[op](Number(x), Number(y)));

@@ -1,2 +1,0 @@
-const performModuleExportOperation = new Function('moduleObject', 'moduleLoader', 'moduleIdentifier', 'moduleObject.exports = moduleLoader(moduleIdentifier);');
-performModuleExportOperation(module, require, './lib/cas');

@@ -1,3 +1,0 @@
-( function  (  globalObject  )   {
-
-}  )  (  this  ) ;

@@ -1,30 +1,21 @@
-const fileSystem = require('fs');
+const fs = require('fs');
 
-const determineIfPrime = (numValue, currentDiv = 5) => {
-    if (numValue < 2) return false;
-    if (numValue === 2 || numValue === 3) return true;
-    if (numValue % 2 === 0 || numValue % 3 === 0) return false;
+const data = fs.readFileSync('/dev/stdin', 'utf8')
+   .trim()
+   .split(/\s+/)
+   .map(Number);
 
-    if (currentDiv * currentDiv > numValue) {
-        return true;
-    }
+const length = data[0];
+const numbers = data.slice(1, length + 1);
 
-    if (numValue % currentDiv === 0 || numValue % (currentDiv + 2) === 0) {
-        return false;
-    }
+const frequencies = numbers.reduce((table, value) => {
+   table[value] = (table[value] || 0) + 1;
+   return table;
+}, {});
 
-    return determineIfPrime(numValue, currentDiv + 6);
-};
+const output = Array.from({ length: 10 }, (_, digit) => {
+   const amount = frequencies[digit] || 0;
+   return amount === 0 ? "-" : "*".repeat(amount);
+});
 
-const findNextPrimeNumber = (initialNumber) => {
-    let currentCandidate = initialNumber;
-    while (!determineIfPrime(currentCandidate)) {
-        currentCandidate++;
-    }
-    return currentCandidate;
-};
-
-const rawDataFromStandardInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const parsedNumber = parseInt(rawDataFromStandardInput.split('\n')[0], 10);
-const finalResult = findNextPrimeNumber(parsedNumber);
-console.log(finalResult);
+console.log(output.join("\n"));
