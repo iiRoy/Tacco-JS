@@ -1,22 +1,19 @@
-const fileAccessModule = require("fs");
+const solve = data => {
+   const values = data.trim().split(/\s+/).map(Number);
 
-const acquireSourceData = (inputPathIdentifier, encodingFormat) => {
-    return fileAccessModule.readFileSync(inputPathIdentifier, encodingFormat);
-};
+   let min1 = Infinity;
+   let min2 = Infinity;
 
-const processTextContent = (initialText) => {
-    return Array.from(initialText).reduce((accumulator, character) => {
-        return accumulator + character.toUpperCase();
-    }, '');
-};
+   for (const value of values) {
+      if (value < min1) {
+         min2 = min1;
+         min1 = value;
+      } else if (value < min2) {
+         min2 = value;
+      }
+   }
 
-const presentResult = (finalContent) => {
-    process.stdout.write(finalContent + '\n');
-};
+   console.log(min1 + min2);
+}
 
-const inputSource = "/dev/stdin";
-const textEncoding = "utf8";
-
-const rawInput = acquireSourceData(inputSource, textEncoding);
-const transformedOutput = processTextContent(rawInput);
-presentResult(transformedOutput);
+solve(require('fs').readFileSync('/dev/stdin', 'utf8'));

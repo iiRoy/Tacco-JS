@@ -1,9 +1,12 @@
-// This module prints a predefined sequence of numerical values to the console.
-console.log(
-  `2
-4
-2
-0
-2
-6`
-); // The output string contains multiple lines.
+function solve(data) {
+   data = data.trim();
+   const parts = data.split(' ');
+
+   if (parts[1] == '+') {
+      console.log(parseInt(parts[0]) + parseInt(parts[2]));
+   } else if (parts[1] == '-') {
+      console.log(parseInt(parts[0]) - parseInt(parts[2]));
+   }
+}
+
+solve(require('fs').readFileSync('/dev/stdin', 'utf8'));

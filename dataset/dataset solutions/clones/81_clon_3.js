@@ -1,10 +1,12 @@
-const fileSystemModule = require("fs");
+const solve = data => {
+   const numbers = data
+      .trim()
+      .split(" ")
+      .map(Number)
+      .sort((x, y) => x - y);
 
-const standardInputPath = "/dev/stdin";
-const textEncoding = "utf8";
+   const result = numbers[0] + numbers[1];
+   console.log(result);
+}
 
-const rawInputBuffer = fileSystemModule.readFileSync(standardInputPath, textEncoding);
-
-const transformedOutputString = rawInputBuffer.toUpperCase();
-
-console.log(transformedOutputString);
+solve(require('fs').readFileSync('/dev/stdin', 'utf8'));
