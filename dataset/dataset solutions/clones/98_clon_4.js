@@ -1,25 +1,16 @@
-const fileSystemModule = require("fs");
-const sourceData = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-const dataLines = sourceData.split(/\n/);
+const fs = require('fs');
 
-let currentPosition = 0;
-let processedValue;
+const lines = fs.readFileSync('/dev/stdin', 'utf8').split(/\n/);
+const values = lines.map((line) => +line);
+const limit = values.findIndex((value) => !value);
+const active = values.slice(0, limit < 0 ? values.length : limit);
 
-for (;;) {
-    const lineContent = dataLines[currentPosition];
+const int32Cell = new Int32Array(1);
+const answers = active.map((value) => {
+  int32Cell[0] = value * value / 98 + 2;
+  return String(int32Cell[0]);
+});
 
-    if (lineContent === undefined) {
-        break;
-    }
-
-    processedValue = Number(lineContent);
-
-    if (!processedValue) {
-        break;
-    }
-
-    const computedResult = Math.floor((processedValue * processedValue / 98) + 2);
-    console.log(computedResult);
-
-    currentPosition++;
+if (answers.length) {
+  process.stdout.write(answers.join('\n') + '\n');
 }

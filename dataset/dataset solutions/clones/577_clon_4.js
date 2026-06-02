@@ -1,45 +1,39 @@
 (function (sourceData) {
-    const escapeRegExp = (str) => {
-        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    };
+    const rows = sourceData.replace(/\r/g, '').split("\n");
+    const answers = [];
 
-    const inputLines = sourceData.replace(/\r/g, '').split("\n");
-    let lineCursor = 0;
-    const outputValues = [];
+    function measurePair(a, b) {
+        const small = a.length < b.length ? a : b;
+        const large = a.length < b.length ? b : a;
+        let best = 0;
 
-    while (true) {
-        const firstInput = inputLines[lineCursor++];
-        if (firstInput === '') {
-            break;
-        }
-        const secondInput = inputLines[lineCursor++];
+        Array.prototype.forEach.call(small, function (_, start) {
+            let size = 1;
 
-        let shorterText, longerText;
-        if (firstInput.length < secondInput.length) {
-            shorterText = firstInput;
-            longerText = secondInput;
-        } else {
-            shorterText = secondInput;
-            longerText = firstInput;
-        }
-
-        let currentHighestLength = 0;
-
-        for (let startPos = 0; startPos < shorterText.length; startPos++) {
-            for (let endPos = startPos + 1; endPos <= shorterText.length; endPos++) {
-                const potentialSubstring = shorterText.substring(startPos, endPos);
-                
-                const searchPattern = new RegExp(escapeRegExp(potentialSubstring));
-                const matchResult = searchPattern.exec(longerText);
-                
-                if (matchResult && matchResult.index > 0) {
-                    currentHighestLength = Math.max(currentHighestLength, potentialSubstring.length);
-                }
+            while (start + size < small.length && large.indexOf(small.slice(start, start + size)) > 0) {
+                size += 1;
             }
-        }
-        outputValues.push(currentHighestLength);
+
+            if (size - 1 > best) {
+                best = size - 1;
+            }
+        });
+
+        return best;
     }
 
-    outputValues.forEach(result => console.log(result));
+    for (let cursor = 0; cursor < rows.length;) {
+        const leftText = rows[cursor++];
 
+        if (leftText === '') {
+            break;
+        }
+
+        const rightText = rows[cursor++];
+        answers.push(measurePair(leftText, rightText));
+    }
+
+    answers.forEach(function (value) {
+        console.log(value);
+    });
 })(require("fs").readFileSync("/dev/stdin", "utf8"));

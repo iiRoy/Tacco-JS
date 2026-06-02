@@ -1,18 +1,17 @@
 "use strict";
 
-const performCalculation = (inputReader) => {
-    const rawContent = inputReader();
-    const firstRelevantLine = rawContent.toString().split('\n')[0];
-    const baseNumber = Number.parseInt(firstRelevantLine.trim(), 10);
+const fs = require("fs");
 
-    const exponent = 3;
-    const cubedValue = Array.from({ length: exponent }).reduce((accumulator) => accumulator * baseNumber, 1);
-    
-    console.log(cubedValue);
-};
+const source = fs.readFileSync("/dev/stdin", "utf8").trim();
+const boundary = source.indexOf("\n");
+const head = boundary === -1 ? source : source.slice(0, boundary);
+const parsed = parseInt(head);
 
-const executeProgram = () => {
-    performCalculation(() => require('fs').readFileSync('/dev/stdin', 'utf8'));
-};
+const factors = [parsed, parsed, parsed];
+let result = 1;
 
-executeProgram();
+while (factors.length > 0) {
+  result *= factors.shift();
+}
+
+console.log(result);

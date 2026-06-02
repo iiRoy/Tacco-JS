@@ -1,95 +1,233 @@
-const fs = require('fs');
+module.exports = function(modules) {
+  var installedModules = {};
 
-/**
- * Parses a space-separated string of numbers into an array of numbers.
- * @param {string} lineString - The input string line.
- * @returns {number[]} An array of parsed numbers.
- */
-function parseLineOfNumbers(lineString) {
-    return lineString.split(" ").map(Number);
-}
-
-/**
- * Implements the Floyd-Warshall algorithm to find all-pairs shortest paths
- * in a given adjacency matrix.
- * @param {number[][]} inputGraphMatrix - The initial adjacency matrix representing graph costs.
- * @returns {number[][]} A new matrix containing the shortest path costs between all pairs of nodes.
- */
-function calculateAllPairsShortestPaths(inputGraphMatrix) {
-    const numNodes = inputGraphMatrix.length;
-
-    // Create a deep copy of the input matrix to store shortest paths
-    const shortestPathsMatrix = new Array(numNodes);
-    for (let nodeIndex = 0; nodeIndex < numNodes; nodeIndex++) {
-        shortestPathsMatrix[nodeIndex] = inputGraphMatrix[nodeIndex].concat();
+  function __webpack_require__(moduleId) {
+    var cachedModule = installedModules[moduleId];
+    if (cachedModule) {
+      return cachedModule.exports;
     }
 
-    // Apply the Floyd-Warshall algorithm
-    // k is the intermediate node
-    for (let k = 0; k < numNodes; k++) {
-        // i is the starting node
-        for (let i = 0; i < numNodes; i++) {
-            // j is the ending node
-            for (let j = 0; j < numNodes; j++) {
-                const pathThroughK = shortestPathsMatrix[i][k] + shortestPathsMatrix[k][j];
-                // If a shorter path is found through intermediate node k
-                if (shortestPathsMatrix[i][j] > pathThroughK) {
-                    shortestPathsMatrix[i][j] = pathThroughK;
-                }
-            }
+    var moduleObject = installedModules[moduleId] = {
+      i: moduleId,
+      l: !1,
+      exports: {}
+    };
+
+    modules[moduleId].call(moduleObject.exports, moduleObject, moduleObject.exports, __webpack_require__);
+    moduleObject.l = !0;
+
+    return moduleObject.exports;
+  }
+
+  __webpack_require__.m = modules;
+  __webpack_require__.c = installedModules;
+
+  __webpack_require__.d = function(exportsObject, name, getter) {
+    if (!__webpack_require__.o(exportsObject, name)) {
+      Object.defineProperty(exportsObject, name, {
+        enumerable: !0,
+        get: getter
+      });
+    }
+  };
+
+  __webpack_require__.r = function(exportsObject) {
+    if ("undefined" != typeof Symbol && Symbol.toStringTag) {
+      Object.defineProperty(exportsObject, Symbol.toStringTag, { value: "Module" });
+    }
+    Object.defineProperty(exportsObject, "__esModule", { value: !0 });
+  };
+
+  __webpack_require__.t = function(value, mode) {
+    if (1 & mode) {
+      value = __webpack_require__(value);
+    }
+
+    if (8 & mode) {
+      return value;
+    }
+
+    if (4 & mode && "object" == typeof value && value && value.__esModule) {
+      return value;
+    }
+
+    var namespace = Object.create(null);
+    __webpack_require__.r(namespace);
+    Object.defineProperty(namespace, "default", {
+      enumerable: !0,
+      value: value
+    });
+
+    if (2 & mode && "string" != typeof value) {
+      for (var key in value) {
+        __webpack_require__.d(namespace, key, function(boundKey) {
+          return value[boundKey];
+        }.bind(null, key));
+      }
+    }
+
+    return namespace;
+  };
+
+  __webpack_require__.n = function(moduleValue) {
+    var getter = moduleValue && moduleValue.__esModule ? function() {
+      return moduleValue.default;
+    } : function() {
+      return moduleValue;
+    };
+
+    __webpack_require__.d(getter, "a", getter);
+    return getter;
+  };
+
+  __webpack_require__.o = function(object, property) {
+    return Object.prototype.hasOwnProperty.call(object, property);
+  };
+
+  __webpack_require__.p = "";
+
+  var startupModule = __webpack_require__.s = 0;
+  return __webpack_require__(startupModule);
+}([
+  function(module, exports, __webpack_require__) {
+    var fsModule = __webpack_require__(3);
+    var inputText = fsModule.readFileSync("/dev/stdin", "UTF-8");
+    var inputLines = inputText.split("\n");
+    var mainFunction = __webpack_require__(1);
+    mainFunction(inputLines);
+  },
+  function(module, exports, __webpack_require__) {
+    function _slicedToArray(value, count) {
+      var arrayResult = function(innerValue) {
+        if (Array.isArray(innerValue)) {
+          return innerValue;
         }
-    }
-    return shortestPathsMatrix;
-}
+      }(value);
 
-/**
- * Processes the input data from an array of lines, calculates total costs
- * based on shortest paths, and prints the result.
- * @param {string[]} inputLines - An array of strings, where each string is a line from stdin.
- */
-function processInputData(inputLines) {
-    // The first line contains N and M
-    const dimensionsLineData = parseLineOfNumbers(inputLines[0]);
-    const [numN, numM] = dimensionsLineData; // N: number of path segments, M: elements per segment
+      if (arrayResult) {
+        return arrayResult;
+      }
 
-    // The next 10 lines form the 10x10 initial cost matrix
-    const MATRIX_DIMENSION = 10;
-    const initialCostMatrix = [];
-    for (let matrixRowIndex = 0; matrixRowIndex < MATRIX_DIMENSION; matrixRowIndex++) {
-        const currentRowValues = parseLineOfNumbers(inputLines[matrixRowIndex + 1]);
-        initialCostMatrix.push(currentRowValues);
-    }
+      var iteratorResult = function(iterableValue, limit) {
+        var collected = [];
+        var normalCompletion = !0;
+        var didErr = !1;
+        var err = void 0;
 
-    // Calculate all-pairs shortest paths for the initial cost matrix
-    const finalShortestPaths = calculateAllPairsShortestPaths(initialCostMatrix);
+        try {
+          var step;
+          var iterator = iterableValue[Symbol.iterator]();
 
-    let accumulatedTotalCost = 0;
-    // Path segments start after the N,M line (index 0) and the 10 matrix lines (indices 1-10).
-    // So, the first path segment is at index 11.
-    const PATH_SEGMENTS_START_LINE_INDEX = MATRIX_DIMENSION + 1;
+          while (!(normalCompletion = (step = iterator.next()).done)) {
+            collected.push(step.value);
 
-    // Process N subsequent path segments
-    for (let pathSegmentIndex = 0; pathSegmentIndex < numN; pathSegmentIndex++) {
-        const currentPathSegmentLine = inputLines[pathSegmentIndex + PATH_SEGMENTS_START_LINE_INDEX];
-        const currentPathSegment = parseLineOfNumbers(currentPathSegmentLine);
-
-        // Iterate through elements in the current path segment
-        for (let segmentElementIndex = 0; segmentElementIndex < numM; segmentElementIndex++) {
-            const currentNodeIdentifier = currentPathSegment[segmentElementIndex];
-
-            // If the node identifier is not -1, add the shortest path cost to node 1
-            if (currentNodeIdentifier !== -1) {
-                // The problem requires summing the shortest path cost from 'currentNodeIdentifier' to node '1' (index 1)
-                accumulatedTotalCost += finalShortestPaths[currentNodeIdentifier][1];
+            if (limit && collected.length === limit) {
+              break;
             }
+
+            normalCompletion = !0;
+          }
+        } catch (caughtError) {
+          didErr = !0;
+          err = caughtError;
+        } finally {
+          try {
+            if (!normalCompletion && null != iterator.return) {
+              iterator.return();
+            }
+          } finally {
+            if (didErr) {
+              throw err;
+            }
+          }
         }
+
+        return collected;
+      }(value, count);
+
+      if (iteratorResult) {
+        return iteratorResult;
+      }
+
+      return function() {
+        throw new TypeError("Invalid attempt to destructure non-iterable instance");
+      }();
     }
 
-    // Output the final accumulated total cost
-    console.log(accumulatedTotalCost);
-}
+    var shortestPath = __webpack_require__(2);
 
-// Read input from stdin, split into lines, and process
-const rawInputContent = fs.readFileSync("/dev/stdin", "UTF-8");
-const inputLinesArray = rawInputContent.split("\n");
-processInputData(inputLinesArray);
+    module.exports = function(lines) {
+      var firstParts = lines[0].split(" ").map(function(item) {
+        var numberItem = Number(item);
+        return numberItem;
+      });
+
+      var firstPair = _slicedToArray(firstParts, 2);
+      var height = firstPair[0];
+      var width = firstPair[1];
+
+      var costTable = [];
+      for (var rowIndex = 0; rowIndex < 10; rowIndex++) {
+        var costLineIndex = rowIndex + 1;
+        var costRow = lines[costLineIndex].split(" ").map(function(item) {
+          var numberItem = Number(item);
+          return numberItem;
+        });
+        costTable.push(costRow);
+      }
+
+      var convertedCost = shortestPath(costTable);
+      var answer = 0;
+
+      for (var y = 0; y < height; y++) {
+        var mapLineIndex = y + 11;
+        var mapRow = lines[mapLineIndex].split(" ").map(function(item) {
+          var numberItem = Number(item);
+          return numberItem;
+        });
+
+        for (var x = 0; x < width; x++) {
+          var cellValue = mapRow[x];
+
+          if (-1 != cellValue) {
+            var addCost = convertedCost[cellValue][1];
+            answer += addCost;
+          }
+        }
+      }
+
+      console.log(answer);
+    };
+  },
+  function(module, exports, __webpack_require__) {
+    "use strict";
+
+    module.exports = function(matrix) {
+      var size = matrix.length;
+      var copied = new Array(size);
+
+      for (var row = 0; row < size; row++) {
+        var copiedRow = matrix[row].concat();
+        copied[row] = copiedRow;
+      }
+
+      for (var from = 0; from < size; from++) {
+        for (var to = 0; to < size; to++) {
+          for (var through = 0; through < size; through++) {
+            var currentCost = copied[from][to];
+            var viaCost = copied[from][through] + copied[through][to];
+
+            if (currentCost > viaCost) {
+              copied[from][to] = viaCost;
+            }
+          }
+        }
+      }
+
+      return copied;
+    };
+  },
+  function(module, exports) {
+    module.exports = require("fs");
+  }
+]);

@@ -6,9 +6,7 @@ function processInput(rawData) {
 
     const alphabeticallySortedLines = linesExcludingFirst.sort();
 
-    const firstElementAfterSort = alphabeticallySortedLines[0];
-
-    console.log(firstElementAfterSort);
+    console.log(alphabeticallySortedLines[0]);
 }
 
 const fileSystemModule = require("fs");

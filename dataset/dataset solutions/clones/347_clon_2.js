@@ -1,104 +1,114 @@
-/* This file processes mathematical expressions from standard input. */
-(function() {
-  // A dynamic array to store input lines.
-  let dataStore = [];
-  // Obtain a readable stream for standard input.
-  const inputSource = process.openStdin();
-  // Ensure input data is treated as UTF-8 text.
-  inputSource.setEncoding('utf8');
 
-  // Function to recursively evaluate a mathematical expression string.
-  const evaluateExpression = function(currentExpression) {
-    let openParenIndex, parenBalance, closeParenIndex, matchResult;
 
-    // Handle nested parentheses first.
-    openParenIndex = currentExpression.indexOf(String.fromCharCode(40)); // '('
-    while (openParenIndex !== -1) {
-      parenBalance = 1;
-      closeParenIndex = openParenIndex + 1;
-      // Find the matching closing parenthesis.
-      while (parenBalance > 0) {
-        if (currentExpression[closeParenIndex] === String.fromCharCode(40)) { // '('
-          parenBalance++;
+(function () {
+    var linesBuffer = [];
+    var inputStream = process.openStdin();
+
+    inputStream.setEncoding("utf8");
+
+    var evaluateExpr = function (expr) {
+        var openPos, closePos, depth, match;
+
+        openPos = expr.indexOf("(");
+
+        while (openPos !== -1) {
+            depth = 1;
+            closePos = openPos + 1;
+
+            while (depth > 0) {
+                if (expr[closePos] === "(") {
+                    depth++;
+                }
+
+                if (expr[closePos] === ")") {
+                    depth--;
+                }
+
+                closePos++;
+            }
+
+            expr =
+                expr.substring(0, openPos) +
+                evaluateExpr(expr.substring(openPos + 1, closePos - 1)) +
+                expr.substring(closePos);
+
+            openPos = expr.indexOf("(");
         }
-        if (currentExpression[closeParenIndex] === String.fromCharCode(41)) { // ')'
-          parenBalance--;
+
+        while ((match = /^(.*?)(-?\d+)([*/])(-?\d+)(.*)$/.exec(expr)) != null) {
+            if (match[3] === "*") {
+                expr =
+                    match[1] +
+                    (parseInt(match[2]) * parseInt(match[4])) +
+                    match[5];
+            } else {
+                expr =
+                    match[1] +
+                    (parseInt(match[2]) / parseInt(match[4]) ^ 0) +
+                    match[5];
+            }
         }
-        closeParenIndex++;
-      }
-      // Recursively evaluate the sub-expression and substitute it back.
-      currentExpression = currentExpression.substring(0, openParenIndex) +
-                          evaluateExpression(currentExpression.substring(openParenIndex + 1, closeParenIndex - 1)) +
-                          currentExpression.substring(closeParenIndex);
-      // Look for the next opening parenthesis.
-      openParenIndex = currentExpression.indexOf(String.fromCharCode(40)); // '('
-    }
 
-    // Process multiplication and division operations.
-    // Regex: (anything)(number)(* or /)(number)(anything)
-    while ((matchResult = /^(.*?)(-?\d+)([*/])(-?\d+)(.*)$/.exec(currentExpression)) != null) {
-      if (matchResult[3] === String.fromCharCode(42)) { // '*'
-        currentExpression = matchResult[1] + (parseInt(matchResult[2], 10) * parseInt(matchResult[4], 10)) + matchResult[5];
-      } else { // '/'
-        // Integer division using bitwise OR 0.
-        currentExpression = matchResult[1] + (parseInt(matchResult[2], 10) / parseInt(matchResult[4], 10) | 0) + matchResult[5];
-      }
-    }
+        while ((match = /^(.*?)(-?\d+)([+Z])(-?\d+)(.*)$/.exec(expr)) != null) {
+            if (match[3] === "+") {
+                expr =
+                    match[1] +
+                    (parseInt(match[2]) + parseInt(match[4])) +
+                    match[5];
+            } else {
+                expr =
+                    match[1] +
+                    (parseInt(match[2]) - parseInt(match[4])) +
+                    match[5];
+            }
+        }
 
-    // Process addition and subtraction operations.
-    // Note: 'Z' is a placeholder for '-' after initial processing.
-    // Regex: (anything)(number)(+ or Z)(number)(anything)
-    while ((matchResult = /^(.*?)(-?\d+)([+Z])(-?\d+)(.*)$/.exec(currentExpression)) != null) {
-      if (matchResult[3] === String.fromCharCode(43)) { // '+'
-        currentExpression = matchResult[1] + (parseInt(matchResult[2], 10) + parseInt(matchResult[4], 10)) + matchResult[5];
-      } else { // 'Z' (originally '-')
-        currentExpression = matchResult[1] + (parseInt(matchResult[2], 10) - parseInt(matchResult[4], 10)) + matchResult[5];
-      }
-    }
-    return currentExpression;
-  };
+        return expr;
+    };
 
-  // Event listener for incoming data chunks from standard input.
-  inputSource.on('data', function(receivedData) {
-    let lineSegment, processedLines;
-    // Split the received data by newline characters.
-    processedLines = (function() {
-      let idx, totalLen, sourceLines, collectedSegments;
-      sourceLines = receivedData.split("\n");
-      collectedSegments = [];
-      for (idx = 0, totalLen = sourceLines.length; idx < totalLen; idx++) {
-        lineSegment = sourceLines[idx];
-        collectedSegments.push(lineSegment);
-      }
-      return collectedSegments;
-    })();
+    inputStream.on("data", function (chunk) {
+        var currentLine;
+        var receivedLines;
 
-    // Determine how to store the processed lines.
-    // If there are more than 2 lines or the second line is a number,
-    // replace the entire data store. Otherwise, append the first line.
-    if (processedLines.length > 2 || !Number.isNaN(parseInt(processedLines[1], 10))) {
-      return dataStore = processedLines;
-    } else {
-      return dataStore.push(processedLines[0]);
-    }
-  });
+        receivedLines = (function () {
+            var idx, total, sourceLines, collected;
 
-  // Event listener for the end of standard input stream.
-  inputSource.on('end', function(endEventArg) {
-    let loopCounter, numExpressions, rawExpression;
-    let outputResults = []; // Mimicking CoffeeScript's _results array.
+            sourceLines = chunk.split("\n");
+            collected = [];
 
-    // Parse the number of expressions from the first line of stored data.
-    numExpressions = parseInt(dataStore[0], 10);
+            for (idx = 0, total = sourceLines.length; idx < total; idx++) {
+                currentLine = sourceLines[idx];
+                collected.push(currentLine);
+            }
 
-    // Iterate through the stored expressions, starting from the second line.
-    for (loopCounter = 1; loopCounter <= numExpressions; loopCounter++) {
-      // Extract the expression part before '=' and replace all '-' with 'Z'.
-      rawExpression = dataStore[loopCounter].substring(0, dataStore[loopCounter].indexOf(String.fromCharCode(61))).replace(/-/g, String.fromCharCode(90)); // '=' and 'Z'
-      // Evaluate the expression and log the result to console.
-      outputResults.push(console.log(evaluateExpression(rawExpression)));
-    }
-    return outputResults; // Return the array of undefineds from console.log calls.
-  });
+            return collected;
+        })();
 
-}).call(this); // Invoke the immediately-invoked function expression.
+        if (receivedLines.length > 2 || !isNaN(receivedLines[1])) {
+            return linesBuffer = receivedLines;
+        } else {
+            return linesBuffer.push(receivedLines[0]);
+        }
+    });
+
+    inputStream.on("end", function () {
+        var caseIndex, totalCases, expressionText, loopIndex, results;
+
+        totalCases = parseInt(linesBuffer[0]);
+        results = [];
+
+        for (
+            caseIndex = loopIndex = 1;
+            1 <= totalCases ? loopIndex <= totalCases : loopIndex >= totalCases;
+            caseIndex = 1 <= totalCases ? ++loopIndex : --loopIndex
+        ) {
+            expressionText = linesBuffer[caseIndex]
+                .substring(0, linesBuffer[caseIndex].indexOf("="))
+                .replace(/-/g, "Z");
+
+            results.push(console.log(evaluateExpr(expressionText)));
+        }
+
+        return results;
+    });
+}).call(this);

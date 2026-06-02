@@ -1,56 +1,78 @@
-function parseNextInteger(linesArray, indexReference) {
-    const value = parseInt(linesArray[indexReference.value].trim());
-    indexReference.value++;
-    return value;
+function readNextCount(inputLines, cursorRef) {
+    var parsedCount = parseInt(inputLines[cursorRef.value].trim());
+    cursorRef.value++;
+    return parsedCount;
 }
 
-function processDataEntries(linesArray, startIndexRef, count) {
-    const nameToTotalMap = new Map();
+function accumulateEntries(inputLines, cursorRef, entryCount) {
+    var registeredNames = [];
+    var accumulatedAmounts = [];
 
-    for (let entryCounter = 0; entryCounter < count; ++entryCounter) {
-        const currentEntryParts = linesArray[startIndexRef.value].trim().split(" ");
-        startIndexRef.value++;
+    for (var entryIndex = 0; entryIndex < entryCount; ++entryIndex) {
+        var fields = inputLines[cursorRef.value].trim().split(" ");
+        cursorRef.value++;
 
-        const entryName = currentEntryParts[0];
-        const quantity = parseInt(currentEntryParts[1]);
-        const price = parseInt(currentEntryParts[2]);
-        const entryProduct = quantity * price;
+        var productValue = parseInt(fields[1]) * parseInt(fields[2]);
+        var currentLength = registeredNames.length;
+        var wasFound = 0;
 
-        nameToTotalMap.set(entryName, (nameToTotalMap.get(entryName) || 0) + entryProduct);
-    }
-    return nameToTotalMap;
-}
+        for (var searchIndex = 0; searchIndex < currentLength; ++searchIndex) {
+            if (registeredNames[searchIndex] == fields[0]) {
+                wasFound = 1;
+                accumulatedAmounts[searchIndex] =
+                    accumulatedAmounts[searchIndex] + productValue;
+                break;
+            }
+        }
 
-function reportHighValueEntries(dataMap) {
-    let hasQualifiedOutput = false;
-    const MIN_QUALIFYING_AMOUNT = 1000000;
-
-    for (const [itemName, totalValue] of dataMap.entries()) {
-        if (totalValue >= MIN_QUALIFYING_AMOUNT) {
-            console.log(itemName);
-            hasQualifiedOutput = true;
+        if (!wasFound) {
+            registeredNames.push(fields[0]);
+            accumulatedAmounts.push(productValue);
         }
     }
 
-    if (!hasQualifiedOutput) {
+    return {
+        names: registeredNames,
+        amounts: accumulatedAmounts
+    };
+}
+
+function printQualifiedEntries(groupedData) {
+    var printedAny = 0;
+    var listLength = groupedData.names.length;
+
+    for (var index = 0; index < listLength; ++index) {
+        if (groupedData.amounts[index] >= 1000000) {
+            console.log(groupedData.names[index]);
+            printedAny = 1;
+        }
+    }
+
+    if (!printedAny) {
         console.log("NA");
     }
 }
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(inputBuffer){
-    const inputLines = inputBuffer.trim().split("\n");
-    const lineIndexRef = { value: 0 };
 
-    while (lineIndexRef.value < inputLines.length) {
-        const numEntriesToProcess = parseNextInteger(inputLines, lineIndexRef);
+process.stdin.on('data', function(inputBuffer) {
+    var inputLines = inputBuffer.trim().split("\n");
+    var cursorRef = { value: 0 };
 
-        if (numEntriesToProcess === 0) {
+    while (cursorRef.value < inputLines.length) {
+        var numberOfEntries = readNextCount(inputLines, cursorRef);
+
+        if (numberOfEntries === 0) {
             break;
         } else {
-            const aggregatedAmounts = processDataEntries(inputLines, lineIndexRef, numEntriesToProcess);
-            reportHighValueEntries(aggregatedAmounts);
+            var groupedData = accumulateEntries(
+                inputLines,
+                cursorRef,
+                numberOfEntries
+            );
+
+            printQualifiedEntries(groupedData);
         }
     }
 });

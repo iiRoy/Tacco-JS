@@ -1,116 +1,214 @@
-class DataQueue {
-    constructor(initialItems = []) {
-        this.items = initialItems;
-        this.currentReadIndex = 0;
-        this.queueSize = initialItems.length;
-    }
+module.exports = (function (modules) {
+    var installedModules = {};
 
-    enqueue(item) {
-        this.items.push(item);
-        this.queueSize++;
-    }
-
-    dequeue() {
-        if (this.currentReadIndex >= this.items.length) {
-            return undefined;
+    function __webpack_require__(moduleId) {
+        var cachedModule = installedModules[moduleId];
+        if (cachedModule) {
+            return cachedModule.exports;
         }
-        const dequeuedItem = this.items[this.currentReadIndex];
-        this.currentReadIndex++;
-        this.queueSize--;
-        return dequeuedItem;
-    }
-}
 
-class InputProcessor {
-    constructor(inputTokens) {
-        this.tokenQueue = new DataQueue(inputTokens);
-    }
+        var moduleRecord = installedModules[moduleId] = {
+            i: moduleId,
+            l: false,
+            exports: {}
+        };
 
-    dequeueToken() {
-        return this.tokenQueue.dequeue();
+        var moduleFactory = modules[moduleId];
+        moduleFactory.call(moduleRecord.exports, moduleRecord, moduleRecord.exports, __webpack_require__);
+        moduleRecord.l = true;
+        return moduleRecord.exports;
     }
 
-    readInt() {
-        const token = this.tokenQueue.dequeue();
-        if (token === undefined) {
-            throw new Error("Attempted to read integer from empty input queue.");
+    __webpack_require__.m = modules;
+    __webpack_require__.c = installedModules;
+
+    __webpack_require__.d = function (exportsObject, propertyName, getter) {
+        var alreadyExists = __webpack_require__.o(exportsObject, propertyName);
+        if (!alreadyExists) {
+            Object.defineProperty(exportsObject, propertyName, {
+                enumerable: true,
+                get: getter
+            });
         }
-        return parseInt(token, 10);
-    }
+    };
 
-    enqueueToken(token) {
-        this.tokenQueue.enqueue(token);
-    }
-}
+    __webpack_require__.r = function (exportsObject) {
+        var canTag = typeof Symbol !== "undefined" && Symbol.toStringTag;
+        if (canTag) {
+            Object.defineProperty(exportsObject, Symbol.toStringTag, { value: "Module" });
+        }
+        Object.defineProperty(exportsObject, "__esModule", { value: true });
+    };
 
-function computeDistancesFromSource(startNodeIndex, totalNodes, adjacencyList) {
-    const distances = new Array(totalNodes).fill(-1);
-    const traversalStack = [[startNodeIndex, 0]];
+    __webpack_require__.t = function (value, mode) {
+        if (mode & 1) {
+            value = __webpack_require__(value);
+        }
+        if (mode & 8) {
+            return value;
+        }
+        if ((mode & 4) && typeof value == "object" && value && value.__esModule) {
+            return value;
+        }
 
-    distances[startNodeIndex] = 0;
+        var namespaceObject = Object.create(null);
+        __webpack_require__.r(namespaceObject);
+        Object.defineProperty(namespaceObject, "default", {
+            enumerable: true,
+            value: value
+        });
 
-    while (traversalStack.length > 0) {
-        const [currentNode, currentDist] = traversalStack.pop();
-
-        for (let i = 0; i < adjacencyList[currentNode].length; i++) {
-            const neighborEdge = adjacencyList[currentNode][i];
-            const neighborNode = neighborEdge[0];
-            const edgeWeight = neighborEdge[1];
-
-            if (distances[neighborNode] === -1) {
-                const newDistance = currentDist + edgeWeight;
-                distances[neighborNode] = newDistance;
-                traversalStack.push([neighborNode, newDistance]);
+        if ((mode & 2) && typeof value != "string") {
+            for (var key in value) {
+                __webpack_require__.d(namespaceObject, key, function (exportName) {
+                    return value[exportName];
+                }.bind(null, key));
             }
         }
+        return namespaceObject;
+    };
+
+    __webpack_require__.n = function (moduleValue) {
+        var getter;
+        if (moduleValue && moduleValue.__esModule) {
+            getter = function () {
+                return moduleValue.default;
+            };
+        } else {
+            getter = function () {
+                return moduleValue;
+            };
+        }
+        __webpack_require__.d(getter, "a", getter);
+        return getter;
+    };
+
+    __webpack_require__.o = function (object, property) {
+        return Object.prototype.hasOwnProperty.call(object, property);
+    };
+
+    __webpack_require__.p = "";
+    var entryId = __webpack_require__.s = 0;
+    return __webpack_require__(entryId);
+})([
+    function (module, exports, __webpack_require__) {
+        "use strict";
+
+        var fsModule = __webpack_require__(1);
+        var InputReader = __webpack_require__(2);
+        var solve = __webpack_require__(4);
+
+        var inputText = fsModule.readFileSync("/dev/stdin", "utf8");
+        var tokens = inputText.split(/\s+/g);
+        var reader = new InputReader(tokens);
+        solve(reader);
+    },
+    function (module, exports) {
+        module.exports = require("fs");
+    },
+    function (module, exports, __webpack_require__) {
+        "use strict";
+
+        var Queue = __webpack_require__(3);
+
+        module.exports = class {
+            constructor(tokens) {
+                this.inp = new Queue(tokens);
+            }
+
+            n() {
+                var token = this.inp.deq();
+                return token;
+            }
+
+            ni() {
+                var rawToken = this.inp.deq();
+                var numberValue = parseInt(rawToken, 10);
+                return numberValue;
+            }
+
+            add(token) {
+                this.inp.enq(token);
+            }
+        };
+    },
+    function (module, exports, __webpack_require__) {
+        "use strict";
+
+        module.exports = class {
+            constructor() {
+                var initialItems = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : [];
+                this.size = initialItems.length;
+                this.items = initialItems;
+                this.ind = 0;
+            }
+
+            enq(item) {
+                this.size += 1;
+                this.items.push(item);
+            }
+
+            deq() {
+                var index = this.ind;
+                var item = this.items[index];
+                this.size -= 1;
+                this.ind += 1;
+                return item;
+            }
+        };
+    },
+    function (module, exports, __webpack_require__) {
+        "use strict";
+
+        module.exports = function (reader) {
+            var n = reader.ni();
+            var graph = new Array(n);
+
+            for (var nodeIndex = 0; nodeIndex < n; nodeIndex++) {
+                graph[nodeIndex] = [];
+            }
+
+            for (var edgeIndex = 0; edgeIndex < n - 1; edgeIndex++) {
+                var leftNode = reader.ni();
+                var rightNode = reader.ni();
+                var cost = reader.ni();
+                var leftIndex = leftNode - 1;
+                var rightIndex = rightNode - 1;
+
+                graph[leftIndex].push([rightIndex, cost]);
+                graph[rightIndex].push([leftIndex, cost]);
+            }
+
+            var queryCount = reader.ni();
+            var rootNode = reader.ni();
+            var distances = new Array(n).fill(-1);
+            var stack = [[rootNode - 1, 0]];
+
+            while (stack.length > 0) {
+                var popped = stack.pop();
+                var currentNode = popped[0];
+                var currentDistance = popped[1];
+                var adjacentCount = graph[currentNode].length;
+
+                for (var adjacentIndex = 0; adjacentIndex < adjacentCount; adjacentIndex++) {
+                    var edge = graph[currentNode][adjacentIndex];
+                    var nextNode = edge[0];
+                    var edgeCost = edge[1];
+
+                    if (-1 == distances[nextNode]) {
+                        var nextDistance = currentDistance + edgeCost;
+                        distances[nextNode] = nextDistance;
+                        stack.push([nextNode, nextDistance]);
+                    }
+                }
+            }
+
+            for (var queryIndex = 0; queryIndex < queryCount; queryIndex++) {
+                var x = reader.ni() - 1;
+                var y = reader.ni() - 1;
+                var answer = distances[x] + distances[y];
+                console.log(answer);
+            }
+        };
     }
-    return distances;
-}
-
-(function() {
-    "use strict";
-
-    const fs = require("fs");
-
-    const rawInputContent = fs.readFileSync("/dev/stdin", "utf8");
-    const inputTokensArray = rawInputContent.split(/\s+/g);
-    const inputReaderInstance = new InputProcessor(inputTokensArray);
-
-    const totalNodes = inputReaderInstance.readInt();
-    const graphAdjacencyList = Array.from({ length: totalNodes }, () => []);
-
-    for (let edgeIndex = 0; edgeIndex < totalNodes - 1; edgeIndex++) {
-        const nodeA_oneBased = inputReaderInstance.readInt();
-        const nodeB_oneBased = inputReaderInstance.readInt();
-        const edgeWeight = inputReaderInstance.readInt();
-
-        const nodeA_zeroBased = nodeA_oneBased - 1;
-        const nodeB_zeroBased = nodeB_oneBased - 1;
-
-        graphAdjacencyList[nodeA_zeroBased].push([nodeB_zeroBased, edgeWeight]);
-        graphAdjacencyList[nodeB_zeroBased].push([nodeA_zeroBased, edgeWeight]);
-    }
-
-    const numQueries = inputReaderInstance.readInt();
-    const sourceNodeOneBased = inputReaderInstance.readInt();
-    const sourceNodeZeroBased = sourceNodeOneBased - 1;
-
-    const distancesFromSource = computeDistancesFromSource(
-        sourceNodeZeroBased,
-        totalNodes,
-        graphAdjacencyList
-    );
-
-    for (let queryCounter = 0; queryCounter < numQueries; queryCounter++) {
-        const queryNode1_oneBased = inputReaderInstance.readInt();
-        const queryNode2_oneBased = inputReaderInstance.readInt();
-
-        const queryNode1_zeroBased = queryNode1_oneBased - 1;
-        const queryNode2_zeroBased = queryNode2_oneBased - 1;
-
-        const combinedDistance = distancesFromSource[queryNode1_zeroBased] + distancesFromSource[queryNode2_zeroBased];
-        console.log(combinedDistance);
-    }
-})();
-
-module.exports = {};
+]);

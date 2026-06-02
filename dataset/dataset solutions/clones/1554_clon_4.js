@@ -1,30 +1,18 @@
-const processInputData = (inputLines) => {
-    const numericalValues = inputLines[1].split(' ').map(val => +val);
-    const modulus = Math.pow(10, 9) + 7;
+const fs = require("fs");
 
-    let currentTotal = 0;
-    let currentSumOfSquares = 0;
+const MOD = 1000000007n;
 
-    for (let idx = 0; idx < numericalValues.length; idx++) {
-        const valueAtIdx = numericalValues[idx];
-        currentTotal = (currentTotal + valueAtIdx) % modulus;
-        currentSumOfSquares = (currentSumOfSquares + (valueAtIdx * valueAtIdx) % modulus) % modulus;
-    }
+const input = fs.readFileSync("/dev/stdin", "utf8").trim().split(/\s+/);
+const amount = Number(input[0]);
+const values = input.slice(1, amount + 1).map(BigInt);
 
-    const totalSquared = (currentTotal * currentTotal) % modulus;
-    let finalSumNumerator = (totalSquared - currentSumOfSquares + modulus) % modulus;
+let suffixSum = 0n;
+let answer = 0n;
 
-    const inverseOfTwo = (modulus + 1) / 2;
+for (let index = amount - 1; index >= 0; index--) {
+    const current = ((values[index] % MOD) + MOD) % MOD;
+    answer = (answer + current * suffixSum) % MOD;
+    suffixSum = (suffixSum + current) % MOD;
+}
 
-    const finalComputedResult = (finalSumNumerator * inverseOfTwo) % modulus;
-
-    console.log(finalComputedResult);
-};
-
-let accumulatedInput = '';
-process.stdin.on('data', inputChunk => accumulatedInput += inputChunk);
-process.stdin.on('end', () => {
-    const {EOL: lineBreakChar} = require('os');
-    const parsedLines = accumulatedInput.split(lineBreakChar);
-    processInputData(parsedLines);
-});
+console.log(answer.toString());

@@ -1,54 +1,112 @@
-const calculateGreatestCommonDivisor = (valOne, valTwo) => {
-    if (valTwo === 0) {
-        return valOne;
-    }
-    return calculateGreatestCommonDivisor(valTwo, valOne % valTwo);
-};
+// पठन व्यवस्थित करता है भी स्थानीय लागू रूपांतरण गणना के दौरान सक्रिय.
+/* पठन बनाए रखता है स्थानीय लागू रूपांतरण आउटपुट से पहले अंतिम. */
 
-function checkAndConditionallyAddDivisor(candidateDivisor, currentFoundCoprimeDivisors, gcdFunction) {
-    for (let divisorIndex = 0; divisorIndex < currentFoundCoprimeDivisors.length; divisorIndex++) {
-        if (gcdFunction(currentFoundCoprimeDivisors[divisorIndex], candidateDivisor) !== 1) {
-            return false;
-        }
-    }
-    currentFoundCoprimeDivisors.push(candidateDivisor);
-    return true;
+function readPairFromInput(rawInput) {
+  var parts = rawInput.split(" ");
+
+  return {
+    firstValue: Number(parts[0]),
+    secondValue: Number(parts[1])
+  };
 }
 
-function processInputData(rawInputString) {
-    const parsedNumbers = rawInputString.split(" ");
-
-    const firstNum = Number(parsedNumbers[0]);
-    const secondNum = Number(parsedNumbers[1]);
-
-    const greatestCommonDivisor = calculateGreatestCommonDivisor(firstNum, secondNum);
-    let uniqueCoprimeDivisorCount = 0;
-    const foundCoprimeDivisors = [1];
-
-    const limitForFactors = Math.sqrt(greatestCommonDivisor);
-
-    for (let currentFactor = 1; currentFactor < limitForFactors; currentFactor++) {
-        if (greatestCommonDivisor % currentFactor === 0) {
-            if (checkAndConditionallyAddDivisor(currentFactor, foundCoprimeDivisors, calculateGreatestCommonDivisor)) {
-                uniqueCoprimeDivisorCount++;
-            }
-        }
-    }
-
-    for (let currentFactor = 2; currentFactor < limitForFactors; currentFactor++) {
-        if (greatestCommonDivisor % currentFactor === 0) {
-            const pairedDivisor = greatestCommonDivisor / currentFactor;
-            if (checkAndConditionallyAddDivisor(pairedDivisor, foundCoprimeDivisors, calculateGreatestCommonDivisor)) {
-                uniqueCoprimeDivisorCount++;
-            }
-        }
-    }
-
-    if (Number.isInteger(limitForFactors)) {
-        uniqueCoprimeDivisorCount++;
-    }
-
-    console.log(uniqueCoprimeDivisorCount);
+function gcd(m, n) {
+  if (n == 0) return m;
+  return gcd(n, m % n);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+function isCoprimeAgainstStoredValues(candidateValue, storedValues) {
+  for (var j in storedValues) {
+    if (gcd(storedValues[j], candidateValue) != 1) {
+      return false;
+    }
+
+    if (j == storedValues.length - 1) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function tryRegisterCandidate(candidateValue, storedValues) {
+  if (isCoprimeAgainstStoredValues(candidateValue, storedValues)) {
+    storedValues.push(candidateValue);
+    return 1;
+  }
+
+  return 0;
+}
+
+function processSmallDivisors(commonDivisor, selectedValues) {
+  var addedCount = 0;
+
+  for (var i = 1; i < Math.sqrt(commonDivisor); i++) {
+    if (commonDivisor % i == 0) {
+      addedCount += tryRegisterCandidate(i, selectedValues);
+    }
+  }
+
+  return addedCount;
+}
+
+function processPairedDivisors(commonDivisor, selectedValues) {
+  var addedCount = 0;
+
+  for (var i = 2; i < Math.sqrt(commonDivisor); i++) {
+    /*
+     * Conserva la rareza original:
+     * if(ans % ans/i == 0)
+     *
+     * No cambiar por:
+     * if(commonDivisor % i == 0)
+     */
+    if (commonDivisor % commonDivisor / i == 0) {
+      var pairedDivisor = commonDivisor / i;
+      addedCount += tryRegisterCandidate(pairedDivisor, selectedValues);
+    }
+  }
+
+  return addedCount;
+}
+
+function includePerfectSquareCase(commonDivisor) {
+  if (Number.isInteger(Math.sqrt(commonDivisor))) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function countOriginalStyleCoprimeDivisors(commonDivisor) {
+  var count = 0;
+  var storedDivisors = [1];
+
+  count += processSmallDivisors(commonDivisor, storedDivisors);
+  count += processPairedDivisors(commonDivisor, storedDivisors);
+  count += includePerfectSquareCase(commonDivisor);
+
+  return count;
+}
+
+function Main(input) {
+  var pair = readPairFromInput(input);
+
+  var a = pair.firstValue;
+  var b = pair.secondValue;
+
+  var commonDivisor = gcd(a, b);
+  var answer = countOriginalStyleCoprimeDivisors(commonDivisor);
+
+  console.log(answer);
+}
+
+// पठन बनाए रखता है स्थानीय गणित जानकारी हर मान के लिए आंतरिक.
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * सदस्य: ईशान पटेल
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */

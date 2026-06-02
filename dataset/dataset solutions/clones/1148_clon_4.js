@@ -1,117 +1,104 @@
-class EditDistanceCalculator {
-  constructor(targetString) {
-    this._targetSequence = targetString.split("");
-    this._currentSequence = [];
-    this._memoizedStates = new Map();
-    this._establishBaseStates();
+'use strict';
+
+class BinaryMinHeap {
+  constructor() {
+    this._data = [];
   }
 
-  _establishBaseStates() {
-    for (let j = 0; j <= this._targetSequence.length; j++) {
-      this._memoizedStates.set(`0,${j}`, { cost: j, predecessor: j === 0 ? [-1, -1] : [0, j - 1] });
+  push(item) {
+    this._data.push(item);
+    let child = this._data.length - 1;
+    while (child > 0) {
+      const parent = (child - 1) >> 1;
+      if (this._data[parent][0] <= item[0]) break;
+      this._data[child] = this._data[parent];
+      child = parent;
     }
+    this._data[child] = item;
   }
 
-  _determineCellState(v, w) {
-    const cellKey = `${v},${w}`;
-    if (this._memoizedStates.has(cellKey)) {
-      return this._memoizedStates.get(cellKey);
-    }
-
-    if (w === 0) {
-      const state = { cost: v, predecessor: [v - 1, 0] };
-      this._memoizedStates.set(cellKey, state);
-      return state;
-    }
-
-    const charFromCurrent = this._currentSequence[v - 1];
-    const charFromTarget = this._targetSequence[w - 1];
-
-    const substitutionPenalty = (charFromCurrent === charFromTarget) ? 0 : 1;
-    const { cost: prevDiagCost } = this._determineCellState(v - 1, w - 1);
-    const candidateSubstitution = prevDiagCost + substitutionPenalty;
-
-    const { cost: prevUpCost } = this._determineCellState(v - 1, w);
-    const candidateDeletion = prevUpCost + 1;
-
-    const { cost: prevLeftCost } = this._determineCellState(v, w - 1);
-    const candidateInsertion = prevLeftCost + 1;
-
-    let minimumCost = candidateSubstitution;
-    let chosenPredecessor = [v - 1, w - 1];
-
-    if (candidateDeletion < minimumCost) {
-      minimumCost = candidateDeletion;
-      chosenPredecessor = [v - 1, w];
-    }
-    if (candidateInsertion < minimumCost) {
-      minimumCost = candidateInsertion;
-      chosenPredecessor = [v, w - 1];
-    }
-
-    const finalState = { cost: minimumCost, predecessor: chosenPredecessor };
-    this._memoizedStates.set(cellKey, finalState);
-    return finalState;
-  }
-
-  updateSourceSuffix(startIndex, newSuffix) {
-    if (startIndex > this._currentSequence.length) {
-      throw new Error("Specified start index exceeds current source length.");
-    }
-
-    this._currentSequence.length = startIndex;
-    this._currentSequence.push(...newSuffix.split(""));
-
-    if (startIndex === 0) {
-      this._memoizedStates.clear();
-      this._establishBaseStates();
-    }
-  }
-
-  retrieveCorrectionMarkers() {
-    const sourceMarkers = Array(this._currentSequence.length).fill(false);
-    const targetMarkers = Array(this._targetSequence.length).fill(false);
-
-    let currentSourceIdx = this._currentSequence.length;
-    let currentTargetIdx = this._targetSequence.length;
-
-    this._determineCellState(currentSourceIdx, currentTargetIdx);
-
-    const backtrackPath = (sIdx, tIdx) => {
-      if (sIdx <= 0 && tIdx <= 0) {
-        return;
-      }
-
-      const { cost: currentCost, predecessor: [prevSIdx, prevTIdx] } = this._memoizedStates.get(`${sIdx},${tIdx}`);
-
-      if (prevSIdx !== -1 || prevTIdx !== -1) {
-        const { cost: predecessorCost } = this._memoizedStates.get(`${prevSIdx},${prevTIdx}`);
-        const stepCost = currentCost - predecessorCost;
-
-        if (stepCost === 0) {
-          if (sIdx > 0) sourceMarkers[sIdx - 1] = true;
-          if (tIdx > 0) targetMarkers[tIdx - 1] = true;
+  pop() {
+    if (this._data.length === 0) return undefined;
+    const top = this._data[0];
+    const tail = this._data.pop();
+    if (this._data.length > 0) {
+      let parent = 0;
+      while (true) {
+        let child = parent * 2 + 1;
+        if (child >= this._data.length) break;
+        const right = child + 1;
+        if (right < this._data.length && this._data[right][0] < this._data[child][0]) {
+          child = right;
         }
+        if (this._data[child][0] >= tail[0]) break;
+        this._data[parent] = this._data[child];
+        parent = child;
       }
-      backtrackPath(prevSIdx, prevTIdx);
-    };
-
-    backtrackPath(currentSourceIdx, currentTargetIdx);
-    return { source: sourceMarkers, target: targetMarkers };
+      this._data[parent] = tail;
+    }
+    return top;
   }
 
-  get finalDistanceValue() {
-    const finalSourceLen = this._currentSequence.length;
-    const finalTargetLen = this._targetSequence.length;
-    return this._determineCellState(finalSourceLen, finalTargetLen).cost;
+  get length() {
+    return this._data.length;
   }
 }
 
-const processInputData = (rawInputContent) => {
-  const [targetString, sourceString] = rawInputContent.split("\n");
-  const distanceCalculator = new EditDistanceCalculator(targetString);
-  distanceCalculator.updateSourceSuffix(0, sourceString);
-  console.log(distanceCalculator.finalDistanceValue);
+function measureEditRoute(referenceText, observedText) {
+  const reference = referenceText.split('');
+  const observed = observedText.split('');
+
+  const rows = observed.length + 1;
+  const cols = reference.length + 1;
+  const total = rows * cols;
+  const best = Array(total).fill(Infinity);
+
+  const encode = (r, c) => r * cols + c;
+  const queue = new BinaryMinHeap();
+  best[0] = 0;
+  queue.push([0, 0, 0]);
+
+  while (queue.length > 0) {
+    const [cost, r, c] = queue.pop();
+    const here = encode(r, c);
+    if (cost !== best[here]) continue;
+    if (r === observed.length && c === reference.length) return cost;
+
+    if (r < observed.length && c < reference.length) {
+      const step = observed[r] === reference[c] ? 0 : 1;
+      const next = encode(r + 1, c + 1);
+      const candidate = cost + step;
+      if (candidate < best[next]) {
+        best[next] = candidate;
+        queue.push([candidate, r + 1, c + 1]);
+      }
+    }
+
+    if (r < observed.length) {
+      const next = encode(r + 1, c);
+      const candidate = cost + 1;
+      if (candidate < best[next]) {
+        best[next] = candidate;
+        queue.push([candidate, r + 1, c]);
+      }
+    }
+
+    if (c < reference.length) {
+      const next = encode(r, c + 1);
+      const candidate = cost + 1;
+      if (candidate < best[next]) {
+        best[next] = candidate;
+        queue.push([candidate, r, c + 1]);
+      }
+    }
+  }
+
+  return best[total - 1];
+}
+
+const main = stdin => {
+  const [word, input] = stdin.split('\n');
+  console.log(measureEditRoute(word, input));
 };
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

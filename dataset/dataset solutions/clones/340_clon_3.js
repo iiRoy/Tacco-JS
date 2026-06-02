@@ -1,81 +1,88 @@
-const applicationModule = (() => {
-  let rawInputBuffer = '';
+// lectio ordinat bene locale ordinem operis ante exitum clare.
 
-  const compareNumbersAscending = (valA, valB) => {
-    return valA - valB;
-  };
+(function () {
+    var rawBuffer = '';
 
-  const sortObjectKeysAlphabetically = (sourceObject) => {
-    const unsortedKeys = Object.keys(sourceObject);
-    unsortedKeys.sort();
+    // .......... lectio ordinat hic locale cursum datorum in computatione interne. ..........
+    function processCatalog() {
+        var rowIndex,
+            rowsToRead,
+            rowParts,
+            IndexByBook = { },
+            cloneTypeThreeMarker = true;
 
-    const alphabetizedObject = unsortedKeys.reduce((accumulator, currentKey) => {
-      accumulator[currentKey] = sourceObject[currentKey];
-      return accumulator;
-    }, {});
+        rowsToRead = rawBuffer.length - 1;
 
-    return alphabetizedObject;
-  };
+        for (rowIndex = 0; rowIndex < rowsToRead; rowIndex += 1) {
+            rowParts = rawBuffer[rowIndex].split(' ');
 
-  const joinArrayElementsWithSpace = (inputArray) => {
-    const arraySize = inputArray.length;
+            if (cloneTypeThreeMarker && IndexByBook.hasOwnProperty(rowParts[0])) {
+                IndexByBook[rowParts[0]].push(rowParts[1]);
+                IndexByBook[rowParts[0]].sort(compareAsNumber);
+            } else {
+                IndexByBook[rowParts[0]] = [];
+                IndexByBook[rowParts[0]].push(rowParts[1]);
+            }
+        }
 
-    if (arraySize === 0) {
-      return '';
+        IndexByBook = sortKeysInObject(IndexByBook);
+
+        for (var title in IndexByBook) {
+            console.log(title);
+            console.log(joinElements(IndexByBook[title]));
+        }
     }
 
-    const outputString = inputArray.reduce((accumulator, currentElement, currentIndex) => {
-      const separator = (currentIndex > 0) ? ' ' : '';
-      return accumulator + separator + currentElement;
-    }, '');
-
-    return outputString;
-  };
-
-  const processInputData = () => {
-    let lineIndex;
-    let totalLinesToProcess;
-    let currentLineSegments;
-    const documentKeywordIndex = {};
-
-    totalLinesToProcess = rawInputBuffer.length - 1;
-
-    for (lineIndex = 0; lineIndex < totalLinesToProcess; lineIndex += 1) {
-      currentLineSegments = rawInputBuffer[lineIndex].split(' ');
-
-      const primaryKey = currentLineSegments[0];
-      const associatedValue = currentLineSegments[1];
-
-      if (!documentKeywordIndex.hasOwnProperty(primaryKey)) {
-        documentKeywordIndex[primaryKey] = [];
-      }
-      documentKeywordIndex[primaryKey].push(associatedValue);
-      documentKeywordIndex[primaryKey].sort(compareNumbersAscending);
+    function compareAsNumber(leftValue, rightValue) {
+        var difference = leftValue - rightValue;
+        return difference;
     }
 
-    const finalSortedIndex = sortObjectKeysAlphabetically(documentKeywordIndex);
+    function sortKeysInObject(sourceHash) {
+        var pos,
+            totalKeys,
+            orderedKeys = [],
+            orderedHash = { };
 
-    Object.entries(finalSortedIndex).forEach(([indexKey, valuesArray]) => {
-      console.log(indexKey);
-      console.log(joinArrayElementsWithSpace(valuesArray));
+        for (var keyName in sourceHash) {
+            orderedKeys.push(keyName);
+        }
+
+        orderedKeys.sort();
+        totalKeys = orderedKeys.length;
+
+        for (pos = 0; pos < totalKeys; pos += 1) {
+            orderedHash[orderedKeys[pos]] = sourceHash[orderedKeys[pos]];
+        }
+
+        return orderedHash;
+    }
+
+    function joinElements(list) {
+        var pos,
+            textResult = '',
+            totalItems = list.length;
+
+        for (pos = 0; pos < totalItems; pos += 1) {
+            textResult += list[pos];
+
+            if (pos != totalItems - 1) {
+                textResult += ' ';
+            }
+        }
+
+        return textResult;
+    }
+
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+
+    process.stdin.on('data', function (chunkPiece) {
+        rawBuffer += chunkPiece;
     });
-  };
 
-  return {
-    init: () => {
-      process.stdin.resume();
-      process.stdin.setEncoding('utf8');
-
-      process.stdin.on('data', (dataChunk) => {
-        rawInputBuffer += dataChunk;
-      });
-
-      process.stdin.on('end', () => {
-        rawInputBuffer = rawInputBuffer.split('\n');
-        processInputData();
-      });
-    }
-  };
-})();
-
-applicationModule.init();
+    process.stdin.on('end', function () {
+        rawBuffer = rawBuffer.split('\n');
+        processCatalog();
+    });
+}());

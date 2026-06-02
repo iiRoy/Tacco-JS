@@ -98,9 +98,9 @@ function main() {
         handleTripleValueUpdates(valU, valV, valW);
 
         while (pendingUpdates.length > 0) {
-            const updateValue = pendingUpdates.pop();
-            const updateCol = pendingUpdates.pop();
             const updateRow = pendingUpdates.pop();
+            const updateCol = pendingUpdates.pop();
+            const updateValue = pendingUpdates.pop();
             if (memoizationTable[updateRow][updateCol] < updateValue) {
                 memoizationTable[updateRow][updateCol] = updateValue;
             }
@@ -122,7 +122,7 @@ function main() {
         enqueueIncrementedUpdate(0, valY, valX, valX);
         if (valX < valY) {
             enqueueIncrementedUpdate(0, valX, valY, valY);
-        } else { // valX === valY
+        } else {
             for (var idx = 0; idx < valX; idx++) {
                 enqueueIncrementedUpdate(0, idx, idx, valX);
             }
@@ -138,7 +138,7 @@ function main() {
             enqueueIncrementedUpdate(valX, valZ, valY, valY);
             if (valY < valZ) {
                 enqueueIncrementedUpdate(valX, valY, valZ, valZ);
-            } else { // valY === valZ
+            } else {
                 for (var idx = 0; idx < valX; idx++) {
                     enqueueIncrementedUpdate(idx, valX, idx, valZ);
                 }
@@ -149,7 +149,7 @@ function main() {
                     enqueueIncrementedUpdate(valX, idx, valZ, idx);
                 }
             }
-        } else { // valX === valY
+        } else {
             enqueueIncrementedUpdate(valX, valX, valZ, valZ);
             for (var idx = 0; idx < valX; idx++) {
                 enqueueIncrementedUpdate(idx, valZ, idx, valX);

@@ -1,57 +1,75 @@
-var inputLines = [];
-var lineReader = require('readline');
+var fs = require("fs");
+var rawInput = fs.readFileSync(0, "utf8");
+var firstLine = rawInput.length === 0 ? undefined : rawInput.split("\n")[0].replace(/\r$/, "");
 
-var interfaceInstance = lineReader.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-});
+var tokens = firstLine.split(" ");
+var stage = Number(tokens[0]);
+var limit = Number(tokens[1]);
 
-interfaceInstance.on('line', function (currentLine) {
-    inputLines.push(currentLine);
-});
+console.log(countFromBurgerStream(stage, limit));
 
-interfaceInstance.on('close', function () {
-    var burgerDepth = Number(inputLines[0].split(" ")[0]);
-    var consumptionLimit = Number(inputLines[0].split(" ")[1]);
+function burgerLayers(level) {
+    return Math.pow(2, level + 2) - 3;
+}
 
-    function computePatties(level, limit) {
-        let currentLevel = level;
-        let currentLimit = limit;
-        let totalPattiesEaten = 0;
+function burgerPatties(level) {
+    return Math.pow(2, level + 1) - 1;
+}
 
-        while (true) {
-            if (currentLevel === 0) {
-                if (currentLimit >= 1) {
-                    totalPattiesEaten += 1;
-                }
-                break;
-            }
-
-            // These values correspond to an (currentLevel-1) burger's properties
-            // 'len' in original code for 'n' corresponds to (currentLevel-1) burger's total layers
-            const lowerLevelBurgerLayers = Math.pow(2, currentLevel + 1) - 3;
-            // 'num' in original code for 'n' corresponds to (currentLevel-1) burger's total patties
-            const lowerLevelBurgerPatties = Math.pow(2, currentLevel) - 1;
-
-            if (currentLimit === 1) { // Lunlun eats only the bottom bun
-                break; // No patties consumed
-            } else if (currentLimit <= lowerLevelBurgerLayers + 1) { // Lunlun eats into the first lower-level burger
-                currentLimit -= 1; // Skip the bottom bun
-                currentLevel -= 1; // Descend into the lower-level burger
-            } else if (currentLimit === lowerLevelBurgerLayers + 2) { // Lunlun eats the first lower-level burger, bottom bun, and the middle patty
-                totalPattiesEaten += lowerLevelBurgerPatties + 1; // Add patties from the lower-level burger plus the middle patty
-                break;
-            } else if (currentLimit <= (lowerLevelBurgerLayers + 1) * 2) { // Lunlun eats the first lower-level burger, bottom bun, middle patty, and into the second lower-level burger
-                totalPattiesEaten += lowerLevelBurgerPatties + 1; // Add patties from the first half and the middle patty
-                currentLimit -= (lowerLevelBurgerLayers + 2); // Adjust the consumption limit for the second lower-level burger
-                currentLevel -= 1; // Descend into the second lower-level burger
-            } else { // Lunlun eats the entire burger
-                totalPattiesEaten += lowerLevelBurgerPatties * 2 + 1; // Add all patties from both lower-level burgers and the middle patty
-                break;
-            }
-        }
-        return totalPattiesEaten;
+function countFromBurgerStream(level, limit) {
+    if (level === 0) {
+        return 1;
     }
 
-    console.log(computePatties(burgerDepth, consumptionLimit));
-});
+    if (Number.isNaN(level)) {
+        return limit === 1 ? 0 : NaN;
+    }
+
+    if (limit <= 0) {
+        return 1;
+    }
+
+    var eaten = 0;
+    var remaining = limit;
+    var symbols = [["burger", level]];
+
+    while (symbols.length > 0 && remaining > 0) {
+        var symbol = symbols.pop();
+        var kind = symbol[0];
+
+        if (kind === "bun") {
+            remaining -= 1;
+            continue;
+        }
+
+        if (kind === "patty") {
+            eaten += 1;
+            remaining -= 1;
+            continue;
+        }
+
+        var currentLevel = symbol[1];
+
+        if (currentLevel === 0) {
+            eaten += 1;
+            remaining -= 1;
+            continue;
+        }
+
+        var totalLayers = burgerLayers(currentLevel);
+
+        if (remaining >= totalLayers) {
+            eaten += burgerPatties(currentLevel);
+            remaining -= totalLayers;
+            continue;
+        }
+
+        symbols.push(["bun"]);
+        symbols.push(["burger", currentLevel - 1]);
+        symbols.push(["patty"]);
+        symbols.push(["burger", currentLevel - 1]);
+        symbols.push(["bun"]);
+    }
+
+    return eaten;
+}

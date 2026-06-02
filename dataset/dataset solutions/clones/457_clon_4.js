@@ -1,109 +1,160 @@
-var rawInput = '';
+var source = '';
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(chunk) {
-    rawInput += chunk;
+process.stdin.on('data', function(part) {
+    source += part;
 });
 process.stdin.on('end', function() {
-    processScenarios(rawInput);
+    solve(source);
 });
 
-function processScenarios(fullInput) {
-    const lineSegments = fullInput.trim().split('\n');
-    let currentLineIndex = 0;
+function solve(source) {
+    var rows = source.trim().split('\n');
+    var cursor = 0;
 
     while (true) {
-        const dimensions = parseNumbers(lineSegments[currentLineIndex++]);
-        if (isTerminalCondition(dimensions)) break;
-
-        const gridWidth = dimensions[0];
-        const gridHeight = dimensions[1];
-        const gridData = new Uint32Array(gridWidth * gridHeight);
-
-        const originCoords = parseNumbers(lineSegments[currentLineIndex++]);
-        const targetCoords = parseNumbers(lineSegments[currentLineIndex++]);
-
-        const blockQuantity = parseInt(lineSegments[currentLineIndex++]);
-        for (let k = 0; k < blockQuantity; k++) {
-            const blockDetails = parseNumbers(lineSegments[currentLineIndex++]);
-            applyBlockToGrid(gridData, gridWidth, gridHeight, blockDetails);
+        var size = toNumbers(rows[cursor++]);
+        if (finished(size)) {
+            break;
         }
 
-        const outcome = findPathBFS(
-            gridData, gridWidth, gridHeight,
-            originCoords[0] - 1, originCoords[1] - 1,
-            targetCoords[0] - 1, targetCoords[1] - 1
-        );
-        console.log(outcome ? "OK" : "NO");
+        var field = makeField(size[0], size[1]);
+        var start = toNumbers(rows[cursor++]);
+        var goal = toNumbers(rows[cursor++]);
+        var blocks = parseInt(rows[cursor++]);
+
+        for (var n = 0; n < blocks; n += 1) {
+            paint(field, toNumbers(rows[cursor++]));
+        }
+
+        var ok = sameRegion(field, start[0] - 1, start[1] - 1, goal[0] - 1, goal[1] - 1);
+        console.log(ok ? 'OK' : 'NO');
     }
 }
 
-function applyBlockToGrid(grid, gridW, gridH, blockInfo) {
-    const blockIdentifier = blockInfo[0];
-    const isHorizontalOrientation = !blockInfo[1];
-    const effectiveBlockWidth = isHorizontalOrientation ? 4 : 2;
-    const effectiveBlockHeight = isHorizontalOrientation ? 2 : 4;
-    const startX = blockInfo[2] - 1;
-    const startY = blockInfo[3] - 1;
+function makeField(width, height) {
+    var field = [];
+    for (var x = 0; x < width; x += 1) {
+        var line = [];
+        for (var y = 0; y < height; y += 1) {
+            line.push(0);
+        }
+        field.push(line);
+    }
+    return field;
+}
 
-    for (let currentX = startX; currentX < startX + effectiveBlockWidth; currentX++) {
-        for (let currentY = startY; currentY < startY + effectiveBlockHeight; currentY++) {
-            grid[currentX * gridH + currentY] = blockIdentifier;
+function paint(field, spec) {
+    var horizontal = !spec[1];
+    var spanX = horizontal ? 4 : 2;
+    var spanY = horizontal ? 2 : 4;
+    var left = spec[2] - 1;
+    var top = spec[3] - 1;
+
+    for (var x = left; x < left + spanX; x += 1) {
+        for (var y = top; y < top + spanY; y += 1) {
+            field[x][y] = spec[0];
         }
     }
 }
 
-function findPathBFS(grid, gridW, gridH, startX, startY, endX, endY) {
-    if (startX === endX && startY === endY) {
+function sameRegion(field, sx, sy, gx, gy) {
+    if (sx === gx && sy === gy) {
         return true;
     }
 
-    const traversalQueue = [];
-    const visitedCoordinates = new Set();
+    var initial = field[sx][sy];
+    var target = field[gx][gy];
+    if (initial !== target) {
+        return false;
+    }
 
-    const initialKey = `${startX},${startY}`;
-    traversalQueue.push([startX, startY]);
-    visitedCoordinates.add(initialKey);
+    var cells = collectCells(field);
+    var parent = Object.create(null);
+    var rank = Object.create(null);
 
-    const movementVectors = [
+    for (var i = 0; i < cells.length; i += 1) {
+        var key = cells[i][0] + ':' + cells[i][1];
+        parent[key] = key;
+        rank[key] = 0;
+    }
+
+    var around = [
         [-1, -1], [-1, 0], [-1, 1],
         [0, -1],           [0, 1],
-        [1, -1], [1, 0], [1, 1]
+        [1, -1],  [1, 0],  [1, 1]
     ];
 
-    while (traversalQueue.length > 0) {
-        const [currentX, currentY] = traversalQueue.shift();
+    for (var c = 0; c < cells.length; c += 1) {
+        var x = cells[c][0];
+        var y = cells[c][1];
+        var value = field[x][y];
+        var here = x + ':' + y;
 
-        if (currentX === endX && currentY === endY) {
-            return true;
-        }
-
-        const currentCellValue = grid[currentX * gridH + currentY];
-
-        for (const [deltaX, deltaY] of movementVectors) {
-            const nextX = currentX + deltaX;
-            const nextY = currentY + deltaY;
-
-            if (nextX < 0 || nextX >= gridW || nextY < 0 || nextY >= gridH) {
-                continue;
-            }
-
-            const nextCellKey = `${nextX},${nextY}`;
-
-            if (!visitedCoordinates.has(nextCellKey) && grid[nextX * gridH + nextY] === currentCellValue) {
-                visitedCoordinates.add(nextCellKey);
-                traversalQueue.push([nextX, nextY]);
+        for (var d = 0; d < around.length; d += 1) {
+            var nx = x + around[d][0];
+            var ny = y + around[d][1];
+            var there = nx + ':' + ny;
+            if (parent[there] !== undefined && field[nx] && field[nx][ny] === value) {
+                join(parent, rank, here, there);
             }
         }
     }
 
-    return false;
+    var a = sx + ':' + sy;
+    var b = gx + ':' + gy;
+    return parent[a] !== undefined && parent[b] !== undefined && root(parent, a) === root(parent, b);
 }
 
-function parseNumbers(inputString) {
-    return inputString.split(' ').map(Number);
+function collectCells(field) {
+    var list = [];
+    for (var x = 0; x < field.length; x += 1) {
+        var seen = Object.create(null);
+        for (var y = 0; y < field[x].length; y += 1) {
+            seen[y] = true;
+            list.push([x, y]);
+        }
+        Object.keys(field[x]).forEach(function(name) {
+            if (/^-?\d+$/.test(name) && !seen[name]) {
+                list.push([x, Number(name)]);
+            }
+        });
+    }
+    return list;
 }
 
-function isTerminalCondition(inputArray) {
-    return inputArray[0] === 0 && inputArray[1] === 0;
+function root(parent, node) {
+    var trail = [];
+    while (parent[node] !== node) {
+        trail.push(node);
+        node = parent[node];
+    }
+    for (var i = 0; i < trail.length; i += 1) {
+        parent[trail[i]] = node;
+    }
+    return node;
+}
+
+function join(parent, rank, left, right) {
+    var a = root(parent, left);
+    var b = root(parent, right);
+    if (a === b) {
+        return;
+    }
+    if (rank[a] < rank[b]) {
+        parent[a] = b;
+    } else if (rank[a] > rank[b]) {
+        parent[b] = a;
+    } else {
+        parent[b] = a;
+        rank[a] += 1;
+    }
+}
+
+function toNumbers(line) {
+    return line.split(' ').map(Number);
+}
+
+function finished(pair) {
+    return pair[0] === 0 && pair[1] === 0;
 }

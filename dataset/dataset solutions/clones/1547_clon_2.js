@@ -5,14 +5,9 @@ const processInput = (rawData) => {
   // The input is expected to be space-separated.
   const [distance, timeLimit, speed] = rawData.split(" ");
 
-  // Convert string values to numbers for arithmetic comparison.
-  const numericDistance = Number(distance);
-  const numericTimeLimit = Number(timeLimit);
-  const numericSpeed = Number(speed);
-
   // Check if the time limit is sufficient to cover the distance at the given speed.
   // The condition is: timeLimit >= (distance / speed)
-  if (numericTimeLimit >= (numericDistance / numericSpeed)) {
+  if (timeLimit >= (distance / speed)) {
     // If the condition is met, the journey is possible.
     console.log("Yes");
   } else {

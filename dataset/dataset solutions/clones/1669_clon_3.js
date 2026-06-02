@@ -1,44 +1,28 @@
 "use strict";
 
-const processInput = (rawData) => {
-  const trimmedData = rawData.trim();
+const solve = data => {
+  const source = data.trim();
 
-  const parseNumericString = (str) => {
-    return parseInt(str, 10);
-  };
+  const rows = source.split('\n');
+  const parsedRows = rows.map(row => {
+    const pieces = row.split(' ');
+    const numbers = pieces.map(piece => parseInt(piece));
+    return numbers;
+  });
 
-  const parseNumberLine = (lineContent) => {
-    return lineContent.split(' ').map(parseNumericString);
-  };
+  const N = parsedRows[0];
+  const A = parsedRows[1];
+  let answer = 0;
 
-  const dataLines = trimmedData.split('\n');
-  const firstLineData = parseNumberLine(dataLines[0]);
-  const numberSequence = parseNumberLine(dataLines[1]);
-
-  let oddCount = 0;
-
-  const INITIAL_INDEX = 1;
-  const ITERATION_STEP = 2;
-  const ODD_CHECK_DIVISOR = 2;
-
-  const isValueOdd = (val) => {
-    if (typeof val !== 'number' || isNaN(val)) {
-      return false;
+  for (let index = 1; index <= A.length; index += 2) {
+    const value = A[index];
+    const oddFlag = value % 2;
+    if (oddFlag) {
+      answer++;
     }
-    return val % ODD_CHECK_DIVISOR !== 0;
-  };
-
-  let currentIdx = INITIAL_INDEX;
-  while (currentIdx <= numberSequence.length) {
-    const currentNumber = numberSequence[currentIdx];
-
-    if (isValueOdd(currentNumber)) {
-      oddCount++;
-    }
-    currentIdx += ITERATION_STEP;
   }
 
-  console.log(oddCount);
-};
-
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+  console.log(answer)
+}
+const inputText = require('fs').readFileSync('/dev/stdin', 'utf8');
+solve(inputText);

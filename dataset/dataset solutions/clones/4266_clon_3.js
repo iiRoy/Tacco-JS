@@ -1,46 +1,100 @@
-const parseIntegerLine = (lineContent) => {
-  return lineContent.split(' ').map(itemStr => parseInt(itemStr, 10));
-};
+function readLineAsIntegers(lineText) {
+  var parts = lineText.split(' ');
+  var values = [];
 
-function processInputData(rawData) {
-  const inputLines = rawData.split('\n');
-
-  const arrayA = parseIntegerLine(inputLines[1]);
-  const arrayB = parseIntegerLine(inputLines[2]);
-  const arrayC = parseIntegerLine(inputLines[3]);
-
-  const calculateCountsForB = (sourceArray, targetArray) => {
-    return targetArray.map(currentBElement => {
-      let countOfSmaller = 0;
-      for (const sourceAElement of sourceArray) {
-        if (sourceAElement < currentBElement) {
-          countOfSmaller++;
-        }
-      }
-      return countOfSmaller;
-    });
-  };
-
-  const countsForB = calculateCountsForB(arrayA, arrayB);
-  console.log(countsForB);
-
-  const calculateSumForSingleC = (currentCElement, bElements, bCounts) => {
-    let sumForCurrentC = 0;
-    for (let bIdx = 0; bIdx < bElements.length; bIdx++) {
-      const innerBElement = bElements[bIdx];
-      if (innerBElement < currentCElement) {
-        sumForCurrentC += bCounts[bIdx];
-      }
-    }
-    return sumForCurrentC;
-  };
-
-  let finalAccumulatedSum = 0;
-  for (const currentCElement of arrayC) {
-    finalAccumulatedSum += calculateSumForSingleC(currentCElement, arrayB, countsForB);
+  for (var index = 0; index < parts.length; index++) {
+    values.push(parseInt(parts[index]));
   }
 
-  console.log(finalAccumulatedSum);
+  return values;
 }
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function extractProblemArrays(rawInput) {
+  var lines = rawInput.split('\n');
+
+  return {
+    firstGroup: readLineAsIntegers(lines[1]),
+    secondGroup: readLineAsIntegers(lines[2]),
+    thirdGroup: readLineAsIntegers(lines[3])
+  };
+}
+
+function isStrictlySmaller(leftValue, rightValue) {
+  return leftValue < rightValue;
+}
+
+function countValuesBeforeMiddleValue(leftValues, middleValue) {
+  var amount = 0;
+
+  for (var leftIndex = 0; leftIndex < leftValues.length; leftIndex++) {
+    if (isStrictlySmaller(leftValues[leftIndex], middleValue)) {
+      amount++;
+    }
+  }
+
+  return amount;
+}
+
+function createMiddleContributionTable(leftValues, middleValues) {
+  var contributionTable = [];
+
+  for (var middleIndex = 0; middleIndex < middleValues.length; middleIndex++) {
+    var middleValue = middleValues[middleIndex];
+
+    contributionTable[middleIndex] = countValuesBeforeMiddleValue(
+      leftValues,
+      middleValue
+    );
+  }
+
+  return contributionTable;
+}
+
+function contributionForRightValue(rightValue, middleValues, contributionTable) {
+  var subtotal = 0;
+
+  for (var middleIndex = 0; middleIndex < middleValues.length; middleIndex++) {
+    var middleValue = middleValues[middleIndex];
+
+    if (isStrictlySmaller(middleValue, rightValue)) {
+      subtotal += contributionTable[middleIndex];
+    }
+  }
+
+  return subtotal;
+}
+
+function calculateFinalTotal(rightValues, middleValues, contributionTable) {
+  var total = 0;
+
+  for (var rightIndex = 0; rightIndex < rightValues.length; rightIndex++) {
+    total += contributionForRightValue(
+      rightValues[rightIndex],
+      middleValues,
+      contributionTable
+    );
+  }
+
+  return total;
+}
+
+function Main(input) {
+  var data = extractProblemArrays(input);
+
+  var possibles = createMiddleContributionTable(
+    data.firstGroup,
+    data.secondGroup
+  );
+
+  console.log(possibles);
+
+  var answer = calculateFinalTotal(
+    data.thirdGroup,
+    data.secondGroup,
+    possibles
+  );
+
+  console.log(answer);
+}
+
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

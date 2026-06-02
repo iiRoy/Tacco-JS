@@ -1,54 +1,86 @@
 "use strict";
 
-const processCombat = (inputData) => {
-    inputData = inputData.trim().split("\n");
+const replayOriginalCorner = (pairs, n, hp) => {
+    pairs.sort((a, b) => b[0] - a[0]);
 
-    const [entityCountStr, initialHealthStr] = inputData[0].split(" ");
-    const entityCount = parseInt(entityCountStr);
-    let currentHealth = parseInt(initialHealthStr);
+    let throwSum = 0;
+    const strongest = pairs[0][0];
 
-    const attackThrowPairs = inputData.slice(1, entityCount + 1).map(line => {
-        const [attackVal, throwVal] = line.split(" ").map(Number);
-        return { attack: attackVal, throw: throwVal };
-    });
-
-    const maxAttackPower = attackThrowPairs.reduce((max, pair) => Math.max(max, pair.attack), 0);
-
-    const initialThrowDamage = attackThrowPairs.reduce((sum, pair) => {
-        return sum + (pair.throw > maxAttackPower ? pair.throw : 0);
-    }, 0);
-
-    let actionCount = 0;
-
-    let healthAfterInitialThrows = currentHealth - initialThrowDamage;
-
-    const directAttackRounds = Math.ceil(healthAfterInitialThrows / maxAttackPower);
-    const effectiveDirectAttacks = Math.max(0, directAttackRounds);
-
-    actionCount += effectiveDirectAttacks;
-    currentHealth -= effectiveDirectAttacks * maxAttackPower;
-
-    if (currentHealth <= 0) {
-        return actionCount;
-    }
-
-    const sortedThrowPowers = attackThrowPairs
-        .map(pair => pair.throw)
-        .sort((a, b) => b - a);
-
-    for (const throwPower of sortedThrowPowers) {
-        currentHealth -= throwPower;
-        actionCount++;
-        if (currentHealth <= 0) {
-            break;
+    for (let i = 0; i < n; i++) {
+        if (pairs[i][1] > strongest) {
+            throwSum += pairs[i][1];
         }
     }
 
-    return actionCount;
+    let count = 0;
+    count += Math.ceil((hp - throwSum) / strongest);
+    count = Math.max(0, count);
+
+    hp -= count * strongest;
+
+    if (hp <= 0) {
+        return count;
+    }
+
+    pairs.sort((a, b) => b[1] - a[1]);
+
+    for (let i = 0; i < n; i++) {
+        hp -= pairs[i][1];
+        count++;
+        if (hp <= 0) break;
+    }
+
+    return count;
 };
 
-const main = arg => {
-    console.log(processCombat(arg));
+const main = input => {
+    const rows = input.trim().split("\n");
+    const n = parseInt(rows[0].split(" ")[0]);
+    const hp0 = parseInt(rows[0].split(" ")[1]);
+
+    const pairs = rows.slice(1, n + 1).map(row => row.split(" ").map(x => parseInt(x)));
+
+    let strongest = pairs[0][0];
+    let cornerCase = !Number.isFinite(hp0);
+    const disposable = [];
+
+    for (let i = 0; i < n; i++) {
+        const attack = pairs[i][0];
+        const singleUse = pairs[i][1];
+
+        if (!Number.isFinite(attack) || !Number.isFinite(singleUse) || !(attack > 0)) {
+            cornerCase = true;
+        }
+
+        if (attack > strongest) strongest = attack;
+        disposable.push(singleUse);
+    }
+
+    if (cornerCase || !(strongest > 0) || !Number.isFinite(strongest)) {
+        console.log(replayOriginalCorner(pairs, n, hp0));
+        return;
+    }
+
+    const usefulThrows = disposable
+        .filter(value => value > strongest)
+        .sort((a, b) => b - a);
+
+    let usedThrowDamage = 0;
+    let bestPlan = Infinity;
+
+    for (let usedThrows = 0; usedThrows <= usefulThrows.length; usedThrows++) {
+        let neededSwings = Math.ceil((hp0 - usedThrowDamage) / strongest);
+        if (neededSwings < 0) neededSwings = 0;
+
+        const totalActions = usedThrows + neededSwings;
+        if (totalActions < bestPlan) bestPlan = totalActions;
+
+        if (usedThrows < usefulThrows.length) {
+            usedThrowDamage += usefulThrows[usedThrows];
+        }
+    }
+
+    console.log(bestPlan);
 };
 
-main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,24 +1,16 @@
 "use strict";
-const fileSystemModule = require("fs");
-const rawInputBuffer = fileSystemModule.readFileSync("/dev/stdin", "UTF-8");
-const processedString = rawInputBuffer.trim();
-const numericValue = Number(processedString);
+const moduloArchivo = require("fs");
+const contenidoEntrada = moduloArchivo.readFileSync("/dev/stdin", "UTF-8");
+const textoEntrada = contenidoEntrada.trim();
+const valorEntrada = Number(textoEntrada);
 
-let outputDecision;
+let resultadoSalida;
+const cumpleCondicion = valorEntrada === 3 || valorEntrada === 5 || valorEntrada === 7;
 
-switch (numericValue) {
-    case 3:
-        outputDecision = "YES";
-        break;
-    case 5:
-        outputDecision = "YES";
-        break;
-    case 7:
-        outputDecision = "YES";
-        break;
-    default:
-        outputDecision = "NO";
-        break;
+if (cumpleCondicion) {
+  resultadoSalida = "YES";
+} else {
+  resultadoSalida = "NO";
 }
 
-console.log(outputDecision);
+console.log(resultadoSalida);

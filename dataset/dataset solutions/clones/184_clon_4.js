@@ -1,21 +1,27 @@
-const sourceData = require("fs").readFileSync("/dev/stdin", "utf8").split(/\s|,/);
+const fs = require("fs");
 
-const numericSequence = sourceData.map(Number);
+const values = fs.readFileSync("/dev/stdin", "utf8")
+    .trim()
+    .split(/[\s,]+/)
+    .map(Number);
 
-let currentS = 0;
-let currentT = 0;
-
-const initialLengthMinusOne = numericSequence.length - 1;
-let currentIdx = initialLengthMinusOne;
-
-while (currentIdx--) {
-  const valueB = +numericSequence[currentIdx--];
-  currentS += valueB;
-  currentT += valueB * numericSequence[currentIdx];
+const pairs = [];
+for (let index = 0; index < values.length; index += 2) {
+    pairs.push({
+        left: values[index],
+        right: values[index + 1]
+    });
 }
 
-const finalDivisor = initialLengthMinusOne * 2;
+const totals = pairs.reduce(function (accumulator, pair) {
+    accumulator.weightedSum += pair.left * pair.right;
+    accumulator.rightSum += pair.right;
+    return accumulator;
+}, {
+    weightedSum: 0,
+    rightSum: 0
+});
 
-const roundedCalculation = ~~(currentS / finalDivisor + 0.5);
+const roundedAverage = Math.trunc(totals.rightSum / (values.length * 2) + 0.5);
 
-console.log(currentT + '\n' + roundedCalculation);
+console.log(totals.weightedSum + "\n" + roundedAverage);

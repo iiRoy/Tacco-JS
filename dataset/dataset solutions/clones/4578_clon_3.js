@@ -1,44 +1,26 @@
 "use strict";
 
-const processInputData = (rawInputContent) => {
-    const inputLines = rawInputContent.split("\n");
-    const firstLineSegments = inputLines[0].split(" ");
-    const totalNodes = Number(firstLineSegments[0]);
-    const totalEdges = Number(firstLineSegments[1]);
-    const edgeDescriptionLines = inputLines.slice(1, totalEdges + 1);
-    return { totalNodes, totalEdges, edgeDescriptionLines };
-};
+const runProgram = source => {
+    const lines = source.split("\n");
+    const first = lines[0].split(" ");
+    const total = parseInt(first[0]);
+    const edges = parseInt(first[1]);
 
-const combineEdgeSegments = (edgeLines) => {
-    let combinedEdgeString = "";
-    for (const line of edgeLines) {
-        // Original logic: split by space, then join without space.
-        // This effectively removes all whitespace from the line.
-        combinedEdgeString += line.replace(/\s/g, "");
-    }
-    return combinedEdgeString;
-};
+    const selected = lines.slice(1, edges + 1);
+    let joinedPath = "";
 
-const computeCharacterFrequencies = (sourceString) => {
-    const frequencyMap = {};
-    for (const char of sourceString) {
-        frequencyMap[char] = (frequencyMap[char] || 0) + 1;
-    }
-    return frequencyMap;
-};
+    selected.forEach(item => {
+        const compact = item.split(" ").join("");
+        joinedPath = joinedPath + compact;
+    });
 
-const executeApplication = (inputPayload) => {
-    const { totalNodes, totalEdges, edgeDescriptionLines } = processInputData(inputPayload);
-
-    const allConcatenatedEdges = combineEdgeSegments(edgeDescriptionLines);
-
-    const charCounts = computeCharacterFrequencies(allConcatenatedEdges);
-
-    for (let nodeId = 1; nodeId <= totalNodes; nodeId++) {
-        // Convert nodeId to string for consistent lookup in charCounts map
-        const count = charCounts[String(nodeId)] || 0;
-        console.log(count);
+    for (let current = 1; current <= total; current++) {
+        const separated = joinedPath.split("");
+        const answer = separated.filter(value => {
+            return value == current;
+        }).length;
+        console.log(answer);
     }
 };
 
-executeApplication(require('fs').readFileSync('/dev/stdin', 'utf8'));
+runProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

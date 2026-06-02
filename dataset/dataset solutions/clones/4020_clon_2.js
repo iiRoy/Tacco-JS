@@ -1,5 +1,5 @@
 // This utility function computes the sum of the individual digits of a given numerical value.
-const digitSumCalculator = (numVal) => {
+digitSumCalculator = numVal => {
   // First, convert the numeric input into its string representation.
   // Then, split the string into an array of single-character strings (digits).
   // Finally, use the 'reduce' method to iterate through these digit characters,
@@ -20,14 +20,14 @@ const digitSumCalculator = (numVal) => {
  */
 function ProcessInput(initialValue) {
   // Declare and initialize a variable to store the maximum digit sum encountered during the process.
-  let maximumSum = 0;
+  maximumSum = 0;
 
   // Begin a loop that iterates downwards.
   // The original loop 'for(i=input;i--;)' effectively starts processing from 'input - 1' down to '0'.
   // We replicate this behavior by initializing 'counter' to 'initialValue - 1' and continuing as long as 'counter' is non-negative.
-  for (let counter = initialValue - 1; counter >= 0; counter--) {
+  for (counter = initialValue; counter--;) {
     // For the current number in the iteration, calculate the sum of its digits.
-    const currentDigitSum = digitSumCalculator(counter);
+    currentDigitSum = digitSumCalculator(counter);
 
     // Compare the newly calculated digit sum with the current maximum.
     // If the current sum is greater, update 'maximumSum'.

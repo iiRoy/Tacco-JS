@@ -165,6 +165,15 @@ class IREmitter {
     switch (node.type) {
 
       case "Literal":
+        if (typeof node.value === "bigint") {
+          return `${node.value.toString()}n`;
+        }
+        if (node.regex) {
+          return `/${node.regex.pattern}/${node.regex.flags}`;
+        }
+        if (node.value === undefined) {
+          return String(node.raw ?? "undefined");
+        }
         return JSON.stringify(node.value);
 
       case "Identifier":

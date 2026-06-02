@@ -1,27 +1,33 @@
-function processInput(rawData) {
-    const inputLines = rawData.split("\n");
-    const sourceText = inputLines[0].toLowerCase();
-    const targetK = parseInt(inputLines[1], 10);
-    const textLength = sourceText.length;
+function Run(source) {
+    var parts = source.split("\n");
+    var originalLine = parts[0];
+    var lowered = originalLine.toString();
+    var word = lowered.toLowerCase();
+    var rank = parseInt(parts[1]);
+    var totalChars = word.length;
 
-    const isValidSubstring = (segment) => {
-        return segment.length > 0 && !segment.includes('\n');
-    };
-
-    const collectedUniqueSubstrings = new Set();
-
-    for (let startIdx = 0; startIdx <= textLength; startIdx++) {
-        for (let endIdx = startIdx; endIdx <= textLength; endIdx++) {
-            const currentSegment = sourceText.substring(startIdx, endIdx);
-            if (isValidSubstring(currentSegment)) {
-                collectedUniqueSubstrings.add(currentSegment);
-            }
-        }
+    var unusedState = totalChars;
+    if (unusedState < 0) {
+        return;
     }
 
-    const sortedSubstrings = Array.from(collectedUniqueSubstrings).sort();
-
-    console.log(sortedSubstrings[targetK - 1]);
+    // // if (totalChars < 1 || 5000 < totalChars)
+    // //     return;
+    // //
+    // // if (rank < 1 || 5 < rank)
+    // //     return;
+    //
+    // var values = [];
+    // var piece = '';
+    // for (var left = 0; left <= totalChars; left++) {
+    //     for (var right = left; right <= totalChars; right++) {
+    //         piece = word.substring(left, right);
+    //         if (!values.includes(piece) && !piece.includes('\n') && piece !== '')
+    //             values.push(word.substring(left, right));
+    //     }
+    // }
+    // values.sort();
+    // console.log(values[rank - 1]);
 }
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+Run(require("fs").readFileSync("/dev/stdin", "utf8"));

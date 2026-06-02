@@ -1,27 +1,57 @@
 "use strict";
 
-const devMode = false;
-const sourceData = devMode
+const DEBUG_MODE = false;
+
+const rawInput = DEBUG_MODE
   ? "30000 30000 30000"
   : require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-    .trim();
+      .readFileSync("/dev/stdin", "utf8")
+      .trim();
 
-const evaluateCondition = inputPayload => {
-  const parsedSegments = inputPayload.split(" ");
-  const limitVal = +parsedSegments[0];
-  const firstCount = +parsedSegments[1];
-  const secondCount = +parsedSegments[2];
+function buildJoinedText(leftText, rightText) {
+  var chars = [];
 
-  const totalRequired = firstCount + secondCount;
-  const isWithinBounds = (totalRequired <= limitVal);
+  for (var i = 0; i < leftText.length; i++) {
+    chars.push(leftText[i]);
+  }
 
-  // Map boolean result to output using array indexing
-  // Number(false) is 0, Number(true) is 1
-  // If isWithinBounds is false (totalRequired > limitVal), index 0 -> ""
-  // If isWithinBounds is true (totalRequired <= limitVal), index 1 -> -1
-  const resultOptions = ["", -1];
-  console.log(resultOptions[Number(isWithinBounds)]);
-};
+  for (var j = 0; j < rightText.length; j++) {
+    chars.push(rightText[j]);
+  }
 
-evaluateCondition(sourceData);
+  return chars.join("");
+}
+
+function isLexicographicallyLessOrEqual(leftText, rightText) {
+  var minLength = Math.min(leftText.length, rightText.length);
+
+  for (var i = 0; i < minLength; i++) {
+    var leftCode = leftText.charCodeAt(i);
+    var rightCode = rightText.charCodeAt(i);
+
+    if (leftCode < rightCode) {
+      return true;
+    }
+
+    if (leftCode > rightCode) {
+      return false;
+    }
+  }
+
+  return leftText.length <= rightText.length;
+}
+
+function process(inputRaw) {
+  const inputs = inputRaw.split(" ");
+
+  const N = inputs[0];
+  const A = inputs[1];
+  const B = inputs[2];
+
+  const joinedAB = buildJoinedText(A, B);
+  const condition = isLexicographicallyLessOrEqual(joinedAB, N);
+
+  console.log(condition ? -1 : "");
+}
+
+process(rawInput);

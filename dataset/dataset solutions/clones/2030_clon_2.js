@@ -1,95 +1,64 @@
-function ProcessInput(rawData) {
-  // The input string is split into an array of lines.
-  let lineData = rawData.split("\n");
-
-  // The first line contains three space-separated numbers.
-  let firstLineParts = lineData[0].split(" ");
-
-  // Parse the numerical parameters from the first line.
-  const nodeCount = Number(firstLineParts[0]);
-  const firstSpecialNode = Number(firstLineParts[1]);
-  const secondSpecialNode = Number(firstLineParts[2]);
-
-  // Initialize an array to store the counts of each distance.
-  // The array size is nodeCount - 1, as distances range from 1 to nodeCount - 1.
-  let distanceCounts = [];
-  for (let currentIdx = 0; currentIdx < nodeCount - 1; currentIdx++) {
-    distanceCounts[currentIdx] = 0;
+// 入力データ全体を受け取る
+function Solve(source) {
+  // 各行を配列にする
+  source = source.split("\n");
+  parts = source[0].split(" ");
+  var n = Number(parts[0]);
+  var a = Number(parts[1]);
+  var b = Number(parts[2]);
+  // 答えを入れる配列
+  var result = [];
+  for(pos = 0; pos<n-1; pos++){
+    result[pos] = 0;
   }
 
-  // Iterate through all possible pairs of distinct nodes (i, j) where i < j.
-  for (let currentStartNode = 1; currentStartNode <= nodeCount - 1; currentStartNode++) {
-    for (let currentEndNode = currentStartNode + 1; currentEndNode <= nodeCount; currentEndNode++) {
-      let calculatedDistance; // Variable to hold the shortest path distance.
-
-      // Case 1: Both nodes are before or at the first special node.
-      if (currentStartNode <= firstSpecialNode && currentEndNode <= firstSpecialNode) {
-        calculatedDistance = currentEndNode - currentStartNode;
+  for(pos=1; pos<=n-1; pos++){
+    for (var nxt = pos+1; nxt <= n; nxt++) {
+      // pos in A, nxt in A ok
+      if(1 <= pos && pos <= a && 1 <= nxt && nxt <= a){
+        dist = nxt-pos;
       }
-      // Case 2: Start node before or at first special, end node between first and second special.
-      else if (currentStartNode <= firstSpecialNode && currentEndNode > firstSpecialNode && currentEndNode < secondSpecialNode) {
-        calculatedDistance = firstSpecialNode - currentStartNode; // Distance to first special node.
+      // pos in A, nxt in B ok
+      if(1 <= pos && pos <= a && a < nxt && nxt < b){
+        dist = a-pos;
 
-        // Calculate two paths from first special node to end node: direct or via second special node.
-        let pathOptionA = currentEndNode - firstSpecialNode;
-        let pathOptionB = secondSpecialNode - currentEndNode + 1; // +1 for the edge between special nodes.
-
-        if (pathOptionA < pathOptionB) {
-          calculatedDistance += pathOptionA;
-        } else {
-          calculatedDistance += pathOptionB;
-        }
+        routeA = nxt-a;
+        routeB = b-nxt+1;
+        if(routeA < routeB) dist += routeA;
+        else dist += routeB;
       }
-      // Case 3: Start node before or at first special, end node at or after second special.
-      else if (currentStartNode <= firstSpecialNode && currentEndNode >= secondSpecialNode) {
-        calculatedDistance = firstSpecialNode - currentStartNode + 1 + currentEndNode - secondSpecialNode;
+      // pos in A, nxt in C ok
+      if(1 <= pos && pos <= a && b <= nxt){
+        dist = a-pos + 1 + nxt-b;
       }
-      // Case 4: Both nodes are between first and second special nodes.
-      else if (currentStartNode > firstSpecialNode && currentStartNode < secondSpecialNode && currentEndNode > firstSpecialNode && currentEndNode < secondSpecialNode) {
-        calculatedDistance = 0; // Initialize for this case.
-
-        // Calculate two paths: direct or via the special node connection.
-        let pathOptionA = currentEndNode - currentStartNode;
-        let pathOptionB = currentStartNode - firstSpecialNode + 1 + secondSpecialNode - currentEndNode;
-
-        if (pathOptionA < pathOptionB) {
-          calculatedDistance += pathOptionA;
-        } else {
-          calculatedDistance += pathOptionB;
-        }
+      // pos in B, nxt in B
+      if(a < pos && pos < b && a < nxt && nxt < b){
+        dist = 0;
+        routeA = nxt-pos;
+        routeB = pos-a + 1 + b-nxt;
+        if(routeA < routeB) dist += routeA;
+        else dist += routeB;
       }
-      // Case 5: Start node between first and second special, end node at or after second special.
-      else if (currentStartNode > firstSpecialNode && currentStartNode < secondSpecialNode && currentEndNode >= secondSpecialNode) {
-        calculatedDistance = currentEndNode - secondSpecialNode; // Distance from second special node to end.
+      // pos in B, nxt in C ok
+      if(a < pos && pos < b && b <= nxt){
+        dist = nxt-b;
 
-        // Calculate two paths from start node to second special node: direct or via first special node.
-        let pathOptionA = currentStartNode - firstSpecialNode + 1;
-        let pathOptionB = secondSpecialNode - currentStartNode;
-
-        if (pathOptionA < pathOptionB) {
-          calculatedDistance += pathOptionA;
-        } else {
-          calculatedDistance += pathOptionB;
-        }
+        routeA = pos-a+1;
+        routeB = b-pos;
+        if(routeA < routeB) dist += routeA;
+        else dist += routeB;
       }
-      // Case 6: Both nodes are at or after the second special node.
-      else if (currentStartNode >= secondSpecialNode && currentEndNode >= secondSpecialNode) {
-        calculatedDistance = currentEndNode - currentStartNode;
+      // pos in C, nxt in C ok
+      if(b <= pos && b <= nxt){
+        dist = nxt-pos;
       }
-
-      // Increment the count for the calculated distance.
-      // Distances are 1-indexed, array is 0-indexed.
-      distanceCounts[calculatedDistance - 1]++;
+      result[dist-1]++;
     }
   }
 
-  // Format the result array into a newline-separated string.
-  let finalOutput = distanceCounts.join("\n");
-
-  // Output the result to the console.
-  console.log('%s', finalOutput);
+  result = result.join("\n");
+  // 出力する
+  console.log('%s', result);
 }
-
-// This part of the code handles reading input and calling the main processing function.
-// It should not be modified.
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+//*ここから下は標準入力を読み込み、Solveを呼び出す
+Solve(require("fs").readFileSync("/dev/stdin", "utf8"));

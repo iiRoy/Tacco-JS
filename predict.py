@@ -96,13 +96,24 @@ def main():
 
     pred = clf.predict(X_new)[0]
 
+    pred_int = int(pred)
+
+    print("Clase predicha:", pred_int)
+
     if class_names is not None:
-        try:
-            print("Resultado:", class_names[int(pred)])
-        except Exception:
-            print("Resultado:", class_names[pred])
+        if isinstance(class_names, dict):
+            print("Resultado:", class_names.get(pred_int, f"Clase desconocida: {pred_int}"))
+        elif isinstance(class_names, list):
+            if 1 <= pred_int <= len(class_names):
+                print("Resultado:", class_names[pred_int - 1])
+            elif 0 <= pred_int < len(class_names):
+                print("Resultado:", class_names[pred_int])
+            else:
+                print("Resultado:", f"Clase desconocida: {pred_int}")
+        else:
+            print("Resultado:", f"Clase desconocida: {pred_int}")
     else:
-        print("Resultado:", DEFAULT_CLASS_NAMES.get(int(pred), f"Clase desconocida: {pred}"))
+        print("Resultado:", DEFAULT_CLASS_NAMES.get(pred_int, f"Clase desconocida: {pred_int}"))
 
 
 if __name__ == "__main__":

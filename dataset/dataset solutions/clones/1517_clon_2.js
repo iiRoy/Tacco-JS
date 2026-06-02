@@ -1,74 +1,59 @@
-const processInput = (inputString) => {
-    // Deconstruct the input string into numerical parameters: total elements, initial value, and modulo base.
-    const [totalElements, initialValue, moduloBase] = inputString.split(" ").map(Number);
-
-    // Initialize an array to store the computed sequence values.
-    // Its size is determined by the modulo base, and it's pre-filled with zeros.
-    let sequenceValues = [...new Array(moduloBase)].fill(0);
-    // Initialize another array to keep track of the first index at which each modulo result appears.
-    // This helps in detecting cycles.
-    let seenIndices = [...new Array(moduloBase)].fill(0);
-
-    // Set the very first element of our sequence.
-    sequenceValues[0] = initialValue;
-    // Mark the initial value's first occurrence at index 0 in our tracking array.
-    seenIndices[initialValue] = 0;
-
-    let currentIdx = 1; // Begin generating the sequence from the second element.
-    let cycleStartIdx = 0; // This will store the starting index of any detected cycle.
-
-    // Iterate to generate sequence elements until a cycle is found or the array capacity is reached.
-    for (; currentIdx < moduloBase; currentIdx++) {
-        // Compute the next sequence value: square the previous value and take it modulo the base.
-        sequenceValues[currentIdx] = (sequenceValues[currentIdx - 1] ** 2) % moduloBase;
-
-        // Check if the newly computed value has been encountered before.
-        if (seenIndices[sequenceValues[currentIdx]] !== 0) {
-            // If it has, a cycle is identified.
-            // The cycle begins at the index where this value was first recorded.
-            cycleStartIdx = seenIndices[sequenceValues[currentIdx]];
-            break; // Terminate the loop as the cycle's start is known.
-        } else {
-            // If this value is new, record its current index in the tracking array.
-            seenIndices[sequenceValues[currentIdx]] = currentIdx;
+const findCycle = (arr, size, value) => {
+    for(let idx=0; idx<size; idx++) {
+        if(arr[idx]===value) {
+            return idx
         }
     }
+    return size
+}
 
-    // The index where the cycle concludes (exclusive).
-    const cycleEndIdx = currentIdx;
+const solve = (data) => {
+    const [cnt,first,modulo] = data.split(" ").map(Number)
+    
+    let seq = [...new Array(modulo)].fill(0)
+    let used = [...new Array(modulo)].fill(0)
+    seq[0] = first
+    used[0] = first
+    // console.log(seq)
+    let idx=1, cycleStart=0
+    for(; idx<modulo; idx++) {
+        seq[idx] = seq[idx-1]**2 % modulo
+        // console.log(`tmp[i]=${tmp[i]}`)
+        if(used[seq[idx]]!==0) {
+            // loop detected
+            // console.log(i)
+            cycleStart = used[seq[idx]]
+            break
+        } else {
+            used[seq[idx]] = idx
+        }
+        // loopStart = checkLoop(tmp, i, tmp[i])
+        // if(loopStart!==i) {
+        //     break
+        // }
+    }
+    // console.log(seq)
+    const cycleEnd = idx
+    const cycleTimes = Math.floor(cnt/(idx-cycleStart))
 
-    // Determine the length of the detected cycle.
-    const cycleLength = cycleEndIdx - cycleStartIdx;
-    // Calculate how many full repetitions of this cycle can fit within the total number of elements.
-    const cycleIterations = Math.floor(totalElements / cycleLength);
+    let result = 0
+    let loopSum = 0
+    for(idx=cycleStart; idx<cycleEnd; idx++) {
+        loopSum += seq[idx]
+    }
+    result += loopSum*cycleTimes
 
-    let finalSum = 0; // The cumulative sum to be outputted.
-    let cycleSum = 0; // The sum of all elements within a single cycle.
-
-    // Sum up all the elements that constitute one full cycle.
-    for (currentIdx = cycleStartIdx; currentIdx < cycleEndIdx; currentIdx++) {
-        cycleSum += sequenceValues[currentIdx];
+    // add first something before loop starts
+    for(idx=0; idx<cycleStart; idx++) {
+        result += seq[idx]
     }
 
-    // Add the contribution of all full cycle repetitions to the total sum.
-    finalSum += cycleSum * cycleIterations;
-
-    // Add the elements that appear before the cycle begins.
-    for (currentIdx = 0; currentIdx < cycleStartIdx; currentIdx++) {
-        finalSum += sequenceValues[currentIdx];
+    // add last something after loop ends
+    const remain = cnt-cycleStart-(cycleEnd-cycleStart)*cycleTimes
+    // console.log(`rest=${rest}`)
+    for(idx=cycleStart; idx<cycleStart+remain; idx++) {
+        result += seq[idx]
     }
-
-    // Calculate the number of elements remaining after accounting for pre-cycle elements and full cycles.
-    const remainingElements = totalElements - cycleStartIdx - (cycleEndIdx - cycleStartIdx) * cycleIterations;
-
-    // Add the remaining elements, which are taken from the beginning of the cycle.
-    for (currentIdx = cycleStartIdx; currentIdx < cycleStartIdx + remainingElements; currentIdx++) {
-        finalSum += sequenceValues[currentIdx];
-    }
-
-    // Display the final computed sum to standard output.
-    console.log(finalSum);
-};
-
-// Read the entire content from standard input, decode it as UTF-8, and pass it to the processing function.
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(result)
+}
+solve(require("fs").readFileSync("/dev/stdin", "utf8"));

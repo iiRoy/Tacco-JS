@@ -1,217 +1,140 @@
-var createInputReader = (function() {
-    function readerFactory(inputString) {
-        return new InputProcessor(inputString);
+const fs = require("fs");
+
+const rawInput = fs.readFileSync("/dev/stdin", "utf8").trim();
+const parts = rawInput.split(/\s+/).map(Number);
+let ptr = 0;
+
+const totalItems = parts[ptr++];
+const repetitionCount = parts[ptr++];
+const sourceValues = parts.slice(ptr, ptr + totalItems);
+
+const positionsByValue = new Map();
+
+for (let index = 0; index < totalItems; index++) {
+    const value = sourceValues[index];
+
+    if (!positionsByValue.has(value)) {
+        positionsByValue.set(value, []);
     }
 
-    function InputProcessor(rawInput) {
-        this._sourceLines = rawInput.trim().split("\n");
-        this._currentLinePointer = 0;
-        this._currentLineTokens = null; // Stores tokens for the current line, consumed by extractToken
-    }
-
-    InputProcessor.prototype.extractToken = function(asNumber) {
-        if (!this._currentLineTokens || this._currentLineTokens.length === 0) {
-            // If current line tokens are exhausted or not initialized, load the next line
-            if (this._currentLinePointer >= this._sourceLines.length) {
-                return undefined; // No more input
-            }
-            this._currentLineTokens = this._sourceLines[this._currentLinePointer++].trim().split(" ").reverse();
-        }
-        const token = this._currentLineTokens.pop();
-        return asNumber ? +token : token;
-    };
-
-    InputProcessor.prototype.extractLine = function(asNumber) {
-        if (this._currentLinePointer >= this._sourceLines.length) {
-            return undefined; // No more input
-        }
-        const lineStr = this._sourceLines[this._currentLinePointer++];
-        this._currentLineTokens = null; // Invalidate current tokens for extractToken
-        const tokens = lineStr.trim().split(" ");
-        return asNumber ? tokens.map(val => +val) : tokens;
-    };
-
-    InputProcessor.prototype.extractMatrix = function(rowCount, asNumber) {
-        return Array.from({
-            length: rowCount
-        }, () => this.extractLine(asNumber));
-    };
-
-    InputProcessor.prototype.extractRows = function(rowCount, asNumber) {
-        return Array.from({
-            length: rowCount
-        }, () => {
-            if (this._currentLinePointer >= this._sourceLines.length) {
-                return undefined; // No more input
-            }
-            const lineStr = this._sourceLines[this._currentLinePointer++];
-            this._currentLineTokens = null; // Invalidate current tokens for extractToken
-            return asNumber ? +lineStr : lineStr;
-        });
-    };
-
-    return readerFactory;
-})();
-
-var inputSource = createInputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-function createNestedArray(initialFillValue, ...dimensionSizes) {
-    const buildRecursive = (dims) => {
-        if (dims.length === 0) {
-            return initialFillValue;
-        }
-        const currentDimSize = dims[0];
-        const remainingDims = dims.slice(1);
-        return Array.from({
-            length: currentDimSize
-        }, () => buildRecursive(remainingDims));
-    };
-    return buildRecursive(dimensionSizes);
+    positionsByValue.get(value).push(index);
 }
 
-function findInsertionPoint(sortedCollection, targetValue, startIndex, endIndex) {
-    if (startIndex >= endIndex) {
-        return sortedCollection[startIndex] < targetValue ? endIndex : startIndex;
+function lowerBound(list, target) {
+    let left = 0;
+    let right = list.length;
+
+    while (left < right) {
+        const middle = (left + right) >> 1;
+
+        if (list[middle] < target) {
+            left = middle + 1;
+        } else {
+            right = middle;
+        }
     }
-    const midPoint = Math.floor((startIndex + endIndex) / 2);
-    if (sortedCollection[midPoint] < targetValue) {
-        return findInsertionPoint(sortedCollection, targetValue, midPoint + 1, endIndex);
-    } else {
-        return findInsertionPoint(sortedCollection, targetValue, startIndex, midPoint);
+
+    return left;
+}
+
+function reduceFrom(startIndex) {
+    const reduced = [];
+
+    for (let scan = startIndex; scan < totalItems; scan++) {
+        const value = sourceValues[scan];
+        const positions = positionsByValue.get(value);
+        const nextPosition = lowerBound(positions, scan + 1);
+
+        if (nextPosition < positions.length) {
+            scan = positions[nextPosition];
+        } else {
+            reduced.push(value);
+        }
+    }
+
+    return reduced;
+}
+
+function printSequence(sequence) {
+    if (sequence.length > 0) {
+        console.log(sequence.join(" "));
     }
 }
 
-// Helper for core skipping logic
-function calculateSkippedSequence(startPosition, totalElements, sequenceData, indexLookup) {
-    const collectedElements = [];
-    let currentScanPosition = startPosition;
+let currentSequence = reduceFrom(0);
 
-    while (currentScanPosition < totalElements) {
-        const currentElement = sequenceData[currentScanPosition];
-        const elementIndices = indexLookup.get(currentElement);
-
-        let nextOccurrenceIndex = findInsertionPoint(elementIndices, currentScanPosition + 1, 0, elementIndices.length);
-
-        if (nextOccurrenceIndex < elementIndices.length) {
-            currentScanPosition = elementIndices[nextOccurrenceIndex];
-        } else {
-            collectedElements.push(currentElement);
-        }
-        currentScanPosition++;
-    }
-    return collectedElements;
+if (repetitionCount === 1 || currentSequence.length === 0) {
+    printSequence(currentSequence);
+    process.exit(0);
 }
 
+const discoveredStarts = new Set([currentSequence[0]]);
+const firstValues = [undefined, currentSequence[0]];
 
-processDataFlow();
+let cycleIndex = 1;
 
-function processDataFlow() {
-    var totalElements = inputSource.extractToken(true);
-    var maxIterations = inputSource.extractToken(true);
-    var dataArray = inputSource.extractLine(true);
+while (cycleIndex < repetitionCount) {
+    const starter = firstValues[cycleIndex];
+    const starterPositions = positionsByValue.get(starter);
+    const starterPosition = starterPositions[lowerBound(starterPositions, 0)];
 
-    var elementIndexMap = new Map();
-    for (var idx = 0; idx < totalElements; idx++) {
-        const currentElementValue = dataArray[idx];
-        if (elementIndexMap.has(currentElementValue)) {
-            elementIndexMap.get(currentElementValue).push(idx);
+    const nextSequence = [];
+    let trackingNewStarts = false;
+
+    for (let scan = starterPosition + 1; scan < totalItems; scan++) {
+        const value = sourceValues[scan];
+        const positions = positionsByValue.get(value);
+        const nextPosition = lowerBound(positions, scan + 1);
+
+        if (nextPosition < positions.length) {
+            scan = positions[nextPosition];
+            trackingNewStarts = false;
         } else {
-            elementIndexMap.set(currentElementValue, [idx]);
-        }
-    }
+            nextSequence.push(value);
 
-    var finalResultSequence = [];
-    let currentPosition = 0;
-    while (currentPosition < totalElements) {
-        const currentElementValue = dataArray[currentPosition];
-        const elementIndices = elementIndexMap.get(currentElementValue);
-        const searchResultIndex = findInsertionPoint(elementIndices, currentPosition + 1, 0, elementIndices.length);
-
-        if (searchResultIndex !== elementIndices.length) {
-            currentPosition = elementIndices[searchResultIndex];
-        } else {
-            finalResultSequence.push(currentElementValue);
-        }
-        currentPosition++;
-    }
-
-    if (maxIterations === 1 || finalResultSequence.length === 0) {
-        if (finalResultSequence.length) console.log(finalResultSequence.join(" "));
-        return;
-    }
-
-    var uniquePatternElements = new Set();
-    uniquePatternElements.add(finalResultSequence[0]);
-    var patternStartValues = [, finalResultSequence[0]]; // Index 0 is null to align with original's first[1] usage
-
-    let iterationCounter = 1; // Corresponds to original 'i'
-    while (iterationCounter < maxIterations) {
-        if (finalResultSequence.length === 0) {
-            break;
-        }
-
-        const currentPatternStarter = patternStartValues[iterationCounter];
-        const starterIndices = elementIndexMap.get(currentPatternStarter);
-        const firstStarterIndex = findInsertionPoint(starterIndices, 0, 0, starterIndices.length);
-        let scanStartPos = starterIndices[firstStarterIndex] + 1;
-
-        const nextResultSequence = [];
-        let patternDiscoveryFlag = false; // Corresponds to original 'f'
-
-        let innerScanPosition = scanStartPos;
-        while (innerScanPosition < totalElements) {
-            const element = dataArray[innerScanPosition];
-            const indices = elementIndexMap.get(element);
-            const nextIdxInIndices = findInsertionPoint(indices, innerScanPosition + 1, 0, indices.length);
-
-            if (nextIdxInIndices < indices.length) {
-                innerScanPosition = indices[nextIdxInIndices];
-                patternDiscoveryFlag = false;
-            } else {
-                nextResultSequence.push(element);
-                if (patternDiscoveryFlag) {
-                    if (!uniquePatternElements.has(element)) {
-                        iterationCounter++; // Original 'i++'
-                        if (iterationCounter >= maxIterations) break; // Check if we exceeded k
-                        patternStartValues.push(element);
-                        uniquePatternElements.add(element);
-                    } else {
-                        patternDiscoveryFlag = false;
-                    }
-                }
-                if (nextResultSequence.length === 1) {
-                    uniquePatternElements.add(element);
-                    patternStartValues.push(element);
-                    patternDiscoveryFlag = true;
+            if (trackingNewStarts) {
+                if (!discoveredStarts.has(value)) {
+                    cycleIndex++;
+                    firstValues.push(value);
+                } else {
+                    trackingNewStarts = false;
                 }
             }
-            innerScanPosition++;
+
+            if (nextSequence.length === 1) {
+                discoveredStarts.add(value);
+                firstValues.push(value);
+                trackingNewStarts = true;
+            }
         }
-        finalResultSequence = nextResultSequence;
-        iterationCounter++; // Original 'i++' at end of outer loop
     }
 
-    if (finalResultSequence.length === 0) {
-        iterationCounter++; // Original: if(ans.length === 0)i++;
+    currentSequence = nextSequence;
+
+    if (currentSequence.length === 0) {
+        break;
     }
 
-    var remainingIterations = maxIterations % iterationCounter;
-    if (remainingIterations === 0) {
-        if (finalResultSequence.length) console.log(finalResultSequence.join(" "));
-        return;
-    }
-
-    let finalScanStartPosition;
-    if (remainingIterations === 1) {
-        finalScanStartPosition = 0;
-    } else {
-        const targetStarter = patternStartValues[remainingIterations - 1];
-        const starterIndices = elementIndexMap.get(targetStarter);
-        const firstStarterIndex = findInsertionPoint(starterIndices, 0, 0, starterIndices.length);
-        finalScanStartPosition = starterIndices[firstStarterIndex] + 1;
-    }
-
-    finalResultSequence = calculateSkippedSequence(finalScanStartPosition, totalElements, dataArray, elementIndexMap);
-
-    if (finalResultSequence.length) console.log(finalResultSequence.join(" "));
+    cycleIndex++;
 }
+
+if (currentSequence.length === 0) {
+    cycleIndex++;
+}
+
+const remainder = repetitionCount % cycleIndex;
+
+if (remainder === 0) {
+    printSequence(currentSequence);
+    process.exit(0);
+}
+
+let restartPosition = 0;
+
+if (remainder !== 1) {
+    const starter = firstValues[remainder - 1];
+    const starterPositions = positionsByValue.get(starter);
+    restartPosition = starterPositions[lowerBound(starterPositions, 0)] + 1;
+}
+
+printSequence(reduceFrom(restartPosition));

@@ -1,85 +1,77 @@
 "use strict";
-var input = require("fs").readFileSync("/dev/stdin", "utf8");
-var cin = input.split(/ |\n/),
-    cid = 0;
 
-const retrieveNextNumber = () => +cin[cid++];
+const source = require("fs").readFileSync("/dev/stdin", "utf8");
+const cells = source.split(/ |\n/);
+let cursor = 0;
 
-const retrieveNextString = () => cin[cid++];
+const takeNumber = () => +cells[cursor++];
+const takeNumbers = (amount) => cells.slice(cursor, (cursor += amount)).map((item) => +item);
 
-const retrieveNextBigInt = () => BigInt(cin[cid++]);
+function countByElimination() {
+    const switchTotal = takeNumber();
+    const lampTotal = takeNumber();
 
-const retrieveNextArray = (count, asStrings) =>
-    asStrings ? cin.slice(cid, (cid += count)) : cin.slice(cid, (cid += count)).map((val) => +val);
+    const masks = [];
+    let impossible = false;
 
-const retrieveNextMatrix = (height, width, asStrings) => {
-    const resultMatrix = [];
-    let currentRow = 0;
-    if (asStrings) {
-        for (; currentRow < height; currentRow++) {
-            resultMatrix.push(cin.slice(cid, (cid += width)));
-        }
-    } else {
-        for (; currentRow < height; currentRow++) {
-            resultMatrix.push(cin.slice(cid, (cid += width)).map((val) => +val));
-        }
-    }
-    return resultMatrix;
-};
+    for (let lamp = 0; lamp < lampTotal; lamp++) {
+        const connected = takeNumber();
+        const switches = takeNumbers(connected);
+        let mask = 0n;
 
-const createMultiDimArray = (...args) => {
-    const initialValue = args[0];
-    const dimensions = args.slice(1);
-
-    const recursiveBuilder = (dims) => {
-        if (dims.length === 0) {
-            return initialValue;
-        }
-        const currentDimensionSize = dims[0];
-        const remainingDimensions = dims.slice(1);
-        return Array.from({ length: currentDimensionSize }, () => recursiveBuilder(remainingDimensions));
-    };
-    return recursiveBuilder(dimensions);
-};
-
-console.log(processSolution().toString());
-
-function processSolution() {
-    const switchCount = retrieveNextNumber();
-    const bulbCount = retrieveNextNumber();
-
-    const switchConnectionsPerBulb = createMultiDimArray(0, bulbCount);
-    const bulbSwitchIndices = createMultiDimArray(0, bulbCount);
-
-    for (let i = 0; i < bulbCount; i++) {
-        switchConnectionsPerBulb[i] = retrieveNextNumber();
-        bulbSwitchIndices[i] = retrieveNextArray(switchConnectionsPerBulb[i]).map((val) => val - 1);
-    }
-    const requiredParities = retrieveNextArray(bulbCount);
-
-    let totalValidConfigurations = 0;
-
-    const exploreSwitchStates = (currentSwitchIndex, currentSwitchStates) => {
-        if (currentSwitchIndex === switchCount) {
-            const allBulbsSatisfied = requiredParities.every((requiredParity, bulbIdx) => {
-                const connectedSwitchIndices = bulbSwitchIndices[bulbIdx];
-                const activeConnectedSwitchCount = connectedSwitchIndices.filter(
-                    (sIdx) => currentSwitchStates[sIdx] === 1
-                ).length;
-                return (activeConnectedSwitchCount % 2) === requiredParity;
-            });
-
-            if (allBulbsSatisfied) {
-                totalValidConfigurations++;
+        for (const raw of switches) {
+            const position = raw - 1;
+            if (!Number.isInteger(position) || position < 0 || position >= switchTotal) {
+                impossible = true;
+            } else {
+                mask ^= 1n << BigInt(position);
             }
-            return;
+        }
+        masks.push(mask);
+    }
+
+    const parity = takeNumbers(lampTotal);
+    if (impossible) return 0;
+
+    const equations = [];
+    for (let i = 0; i < lampTotal; i++) {
+        const need = parity[i];
+        if (need !== 0 && need !== 1) return 0;
+        equations.push({ mask: masks[i], rhs: need });
+    }
+
+    let rank = 0;
+    for (let bit = 0; bit < switchTotal; bit++) {
+        const pivotBit = 1n << BigInt(bit);
+        let pivot = -1;
+
+        for (let row = rank; row < equations.length; row++) {
+            if ((equations[row].mask & pivotBit) !== 0n) {
+                pivot = row;
+                break;
+            }
         }
 
-        exploreSwitchStates(currentSwitchIndex + 1, [...currentSwitchStates, 0]);
-        exploreSwitchStates(currentSwitchIndex + 1, [...currentSwitchStates, 1]);
-    };
+        if (pivot < 0) continue;
 
-    exploreSwitchStates(0, []);
+        const chosen = equations[pivot];
+        equations[pivot] = equations[rank];
+        equations[rank] = chosen;
 
-    return totalValidConfigurations;
+        for (let row = 0; row < equations.length; row++) {
+            if (row !== rank && (equations[row].mask & pivotBit) !== 0n) {
+                equations[row].mask ^= equations[rank].mask;
+                equations[row].rhs ^= equations[rank].rhs;
+            }
+        }
+        rank++;
+    }
+
+    for (const eq of equations) {
+        if (eq.mask === 0n && eq.rhs !== 0) return 0;
+    }
+
+    return 2 ** (switchTotal - rank);
 }
+
+console.log(countByElimination().toString());

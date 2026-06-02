@@ -1,77 +1,63 @@
+//Don't have to see. start------------------------------------------
 var read = require('readline').createInterface({
   input: process.stdin, output: process.stdout
 });
-var inputProcessor;
-var inputLines = [];
-read.on('line', function(input){inputLines.push(input);});
+var obj; var inLine = [];
+read.on('line', function(input){inLine.push(input);});
 read.on('close', function(){
-  inputProcessor = initializeInput(inputLines);
+  obj = init(inLine);
   console.error('\n↑入力 ↓出力');
-  executePrimaryLogic();
+  Main();
 });
-function duplicateObject(source){return (source instanceof Set) ? new Set(Array.from(source)) : JSON.parse(JSON.stringify(source));}
-function retrieveInteger(){return convertInput(retrieveNext(),1);}
-function retrieveStringArray(){return convertInput(retrieveNext(),2);}
-function retrieveIntegerArray(){return convertInput(retrieveNext(),4);}
-function retrieveCharacterArray(){return convertInput(retrieveNext(),6);}
-function retrieveNext(){return inputProcessor.next();}
-function hasMoreInput(){return inputProcessor.hasNext();}
-function initializeInput(lines){  
+function makeClone(obj){return (obj instanceof Set) ? new Set(Array.from(obj)) : JSON.parse(JSON.stringify(obj));}
+function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+function init(input){  
   return {
-    dataList : lines, currentIdx : 0, maxIdx : lines.length,
-    hasNext : function(){return (this.currentIdx < this.maxIdx);},
-    next : function(){if(this.hasNext()){return this.dataList[this.currentIdx++];}else{throw 'InputExhaustedException: No more input available';}}
+    list : input, index : 0, max : input.length,
+    hasNext : function(){return (this.index < this.max);},
+    next : function(){if(this.hasNext()){return this.list[this.index++];}else{throw 'ArrayIndexOutOfBoundsException ‚There is no more input';}}
   };
 }
-function displayOutput(content){console.log(content);}
-function displayDebug(content){console.error('debug:' + require('util').inspect(content,false,null));}
-function convertInput(data, conversionType){try{switch(conversionType){case 1:return parseInt(data);case 2:return data.split(' ');case 4:return data.split(' ').map(Number);case 6:return data.split('');case 7:return data.split('').map(Number);case 8:return data.join(' ');case 9:return data.join('\n');case 0:return data.join('');default:return data;}}catch(e){return data;}}
+function myout(s){console.log(s);}
+function myerr(s){console.error('debug:' + require('util').inspect(s,false,null));}
+function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(' ');case 4:return i.split(' ').map(Number);case 6:return i.split('');case 7:return i.split('').map(Number);case 8:return i.join(' ');case 9:return i.join('\n');case 0:return i.join('');default:return i;}}catch(e){return i;}}
 
-function executePrimaryLogic(){
-  const animalCount = retrieveInteger();
-  const observationPattern = retrieveCharacterArray();
+//Don't have to see. end------------------------------------------
+function Main(){
+  var N = nextInt();
+  var list = nextCharArray();
 
-  const animalTypeToNum = { 'S': 0, 'W': 1 };
-  const numToAnimalType = { 0: 'S', 1: 'W' };
-
-  const deriveNextAnimal = (firstPrev, secondPrev, currentObservation) => {
-    const firstNum = animalTypeToNum[firstPrev];
-    const secondNum = animalTypeToNum[secondPrev];
-    const xorResult = firstNum ^ secondNum;
-
-    const nextNum = (currentObservation === 'o') ? xorResult : (1 - xorResult);
-    return numToAnimalType[nextNum];
+  var nextState = function(state, mark){
+    var left = state >> 1;
+    var right = state & 1;
+    var third = left ^ right ^ (mark == "o" ? 0 : 1);
+    return (right << 1) | third;
   };
 
-  const attemptSequenceConstruction = (initialA, initialB) => {
-    const currentSequence = [initialA, initialB];
-    for (let k = 0; k < animalCount; k++) {
-      currentSequence.push(
-        deriveNextAnimal(currentSequence[k], currentSequence[k + 1], observationPattern[k])
-      );
+  var chosen = -1;
+  for(var seed = 0; seed < 4; seed++){
+    var after = seed;
+    for(var i = 0; i < N; i++){
+      after = nextState(after, list[i]);
     }
-
-    const isConsistent = (
-      currentSequence[0] === currentSequence[animalCount] &&
-      currentSequence[1] === currentSequence[animalCount + 1]
-    );
-
-    return isConsistent ? currentSequence.slice(0, animalCount).join('') : null;
-  };
-
-  const initialConfigurations = [
-    ['S', 'S'],
-    ['S', 'W'],
-    ['W', 'S'],
-    ['W', 'W']
-  ];
-
-  const foundSolution = initialConfigurations.reduce((accumulator, currentPair) => {
-    if (accumulator !== null) {
-      return accumulator;
+    if(after == seed){
+      chosen = seed;
+      break;
     }
-    return attemptSequenceConstruction(currentPair[0], currentPair[1]);
-  }, null);
+  }
 
-  displayOutput(foundSolution !== null ? foundSolution : -1);
+  if(chosen < 0){
+    myout(-1);
+    return;
+  }
+
+  var answer = [];
+  var state = chosen;
+  for(var j = 0; j < N; j++){
+    answer.push((state >> 1) === 0 ? "S" : "W");
+    state = nextState(state, list[j]);
+  }
+  myout(answer.join(""));
 }

@@ -1,35 +1,27 @@
 "use strict";
 
-const processInput = (rawData) => {
-    const parts = rawData.trim().split(' ');
-    const alpha = Number(parts[0]);
-    const beta = Number(parts[1]);
-    const gamma = Number(parts[2]);
+const fs = require("fs");
 
-    const deriveOutcomeIdentifier = (valA, valB, valC) => {
-        const deltaValue = valC - valB;
-        const limitValue = valA + 1;
+const values = fs.readFileSync("/dev/stdin", "utf8").trim().split(/\s+/).map(Number);
 
-        return valB >= valC
-            ? 'scenarioOne'
-            : limitValue < deltaValue
-                ? 'scenarioTwo'
-                : limitValue > deltaValue
-                    ? 'scenarioThree'
-                    : 'scenarioFour';
-    };
+const daysLimit = values[0];
+const currentDay = values[1];
+const expireDay = values[2];
 
-    const outcomeRegistry = {
-        'scenarioOne': 'delicious',
-        'scenarioTwo': 'dangerous',
-        'scenarioThree': 'safe',
-        'scenarioFour': ''
-    };
-
-    const identifier = deriveOutcomeIdentifier(alpha, beta, gamma);
-    const finalMessage = outcomeRegistry[identifier];
-
-    console.log(finalMessage);
+const resultByState = {
+    expiredOrToday: "delicious",
+    tooLate: "dangerous",
+    stillFine: "safe",
+    exactBorder: ""
 };
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const getState = () => {
+    if (currentDay >= expireDay) return "expiredOrToday";
+
+    const remainingDays = expireDay - currentDay;
+    const comparison = Math.sign((daysLimit + 1) - remainingDays);
+
+    return comparison < 0 ? "tooLate" : comparison > 0 ? "stillFine" : "exactBorder";
+};
+
+console.log(resultByState[getState()]);

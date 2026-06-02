@@ -1,126 +1,93 @@
-function findDuplicateIndices(inputArray) {
-    const DIGIT_RANGE = 10;
-    const occurrenceCounts = new Array(DIGIT_RANGE).fill(0);
+function duplicatedPlaces(lineValues) {
+    var amountByNumber = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-    for (const currentValue of inputArray) {
-        if (currentValue >= 0 && currentValue < DIGIT_RANGE) {
-            occurrenceCounts[currentValue]++;
-        }
-    }
+    lineValues.forEach(function (number) {
+        amountByNumber[number - 0]++;
+    });
 
-    const duplicateValues = [];
-    for (let i = 0; i < DIGIT_RANGE; i++) {
-        if (occurrenceCounts[i] >= 2) {
-            duplicateValues.push(i);
-        }
-    }
+    var repeatedNumbers = [];
+    amountByNumber.forEach(function (amount, number) {
+        if (amount >= 2) repeatedNumbers.push(number);
+    });
 
-    const indicesOfDuplicates = [];
-    for (let i = 0; i < inputArray.length; i++) {
-        if (duplicateValues.includes(inputArray[i])) {
-            indicesOfDuplicates.push(i);
-        }
-    }
-    return indicesOfDuplicates;
+    var repeatedPlaces = [];
+    lineValues.forEach(function (number, place) {
+        if (repeatedNumbers.indexOf(number) !== -1) repeatedPlaces.push(place);
+    });
+
+    return repeatedPlaces;
 }
 
-const parseNumericRow = (lineString) => lineString.split(" ").map(Number);
+var fs = require("fs");
+var data = fs.readFileSync("/dev/stdin", "utf8");
+var lines = data.trim().split("\n");
 
-const readSquareGrid = (sourceLines, dimension) => {
-    const grid = [];
-    for (let i = 0; i < dimension; i++) {
-        grid.push(parseNumericRow(sourceLines.shift()));
+var answer = "";
+var cases = lines.shift() - 0;
+
+for (var caseIndex = 0; caseIndex < cases; caseIndex++) {
+    var board = [];
+    var marks = [];
+
+    for (var row = 0; row < 9; row++) {
+        var currentRow = lines.shift().split(" ").map(Number);
+        board.push(currentRow);
+        marks.push([0, 0, 0, 0, 0, 0, 0, 0, 0]);
     }
-    return grid;
-};
 
-const createZeroFilledGrid = (dimension) => {
-    return Array.from({ length: dimension }, () => new Array(dimension).fill(0));
-};
-
-const getColumnValues = (grid, colIndex, dimension) => {
-    const column = [];
-    for (let rowIndex = 0; rowIndex < dimension; rowIndex++) {
-        column.push(grid[rowIndex][colIndex]);
+    for (var row = 0; row < 9; row++) {
+        var rowDuplicates = duplicatedPlaces(board[row]);
+        rowDuplicates.forEach(function (col) {
+            marks[row][col]++;
+        });
     }
-    return column;
-};
 
-const getSubgridCellCoordinates = (blockRowIndex, blockColIndex, subgridDimension) => {
-    const coords = [];
-    for (let r = 0; r < subgridDimension; r++) {
-        for (let c = 0; c < subgridDimension; c++) {
-            coords.push([blockRowIndex * subgridDimension + r, blockColIndex * subgridDimension + c]);
+    for (var col = 0; col < 9; col++) {
+        var columnValues = [];
+
+        for (var row = 0; row < 9; row++) {
+            columnValues.push(board[row][col]);
         }
+
+        var columnDuplicates = duplicatedPlaces(columnValues);
+        columnDuplicates.forEach(function (row) {
+            marks[row][col]++;
+        });
     }
-    return coords;
-};
 
-const getValuesFromCoordinates = (grid, coordinatesList) => {
-    const values = [];
-    for (const coordPair of coordinatesList) {
-        values.push(grid[coordPair[0]][coordPair[1]]);
-    }
-    return values;
-};
+    for (var boxRow = 0; boxRow < 3; boxRow++) {
+        for (var boxCol = 0; boxCol < 3; boxCol++) {
+            var boxCells = [
+                [0 + boxRow * 3, 0 + boxCol * 3],
+                [0 + boxRow * 3, 1 + boxCol * 3],
+                [0 + boxRow * 3, 2 + boxCol * 3],
+                [1 + boxRow * 3, 0 + boxCol * 3],
+                [1 + boxRow * 3, 1 + boxCol * 3],
+                [1 + boxRow * 3, 2 + boxCol * 3],
+                [2 + boxRow * 3, 0 + boxCol * 3],
+                [2 + boxRow * 3, 1 + boxCol * 3],
+                [2 + boxRow * 3, 2 + boxCol * 3]
+            ];
 
-const formatOutputGrid = (originalGrid, markerGrid, dimension) => {
-    const formattedRows = [];
-    for (let r = 0; r < dimension; r++) {
-        const currentRow = [];
-        for (let c = 0; c < dimension; c++) {
-            const cellValue = originalGrid[r][c];
-            const formattedCell = markerGrid[r][c] >= 1 ? `*${cellValue}` : ` ${cellValue}`;
-            currentRow.push(formattedCell);
-        }
-        formattedRows.push(currentRow.join(""));
-    }
-    return formattedRows.join("\n");
-};
+            var boxValues = [];
+            boxCells.forEach(function (cell) {
+                boxValues.push(board[cell[0]][cell[1]]);
+            });
 
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const inputLines = rawData.trim().split("\n");
-
-let outputBuffer = "";
-
-const GRID_DIMENSION = 9;
-const SUBGRID_DIMENSION = 3;
-
-const numTestCases = Number(inputLines.shift());
-
-for (let testCaseIndex = 0; testCaseIndex < numTestCases; testCaseIndex++) {
-    const gridData = readSquareGrid(inputLines, GRID_DIMENSION);
-    const duplicateMarkers = createZeroFilledGrid(GRID_DIMENSION);
-
-    for (let rowIndex = 0; rowIndex < GRID_DIMENSION; rowIndex++) {
-        const duplicatePositions = findDuplicateIndices(gridData[rowIndex]);
-        for (const colIndex of duplicatePositions) {
-            duplicateMarkers[rowIndex][colIndex]++;
+            var boxDuplicates = duplicatedPlaces(boxValues);
+            boxDuplicates.forEach(function (place) {
+                marks[boxCells[place][0]][boxCells[place][1]]++;
+            });
         }
     }
 
-    for (let colIndex = 0; colIndex < GRID_DIMENSION; colIndex++) {
-        const columnValues = getColumnValues(gridData, colIndex, GRID_DIMENSION);
-        const duplicatePositions = findDuplicateIndices(columnValues);
-        for (const rowIndex of duplicatePositions) {
-            duplicateMarkers[rowIndex][colIndex]++;
-        }
-    }
+    board.forEach(function (rowValues, row) {
+        rowValues.forEach(function (value, col) {
+            board[row][col] = marks[row][col] >= 1 ? "*" + value : " " + value;
+        });
+    });
 
-    for (let blockRow = 0; blockRow < SUBGRID_DIMENSION; blockRow++) {
-        for (let blockCol = 0; blockCol < SUBGRID_DIMENSION; blockCol++) {
-            const subgridCoordinates = getSubgridCellCoordinates(blockRow, blockCol, SUBGRID_DIMENSION);
-            const subgridValues = getValuesFromCoordinates(gridData, subgridCoordinates);
-            const duplicatePositions = findDuplicateIndices(subgridValues);
-
-            for (const duplicateIndex of duplicatePositions) {
-                const [originalRow, originalCol] = subgridCoordinates[duplicateIndex];
-                duplicateMarkers[originalRow][originalCol]++;
-            }
-        }
-    }
-
-    outputBuffer += formatOutputGrid(gridData, duplicateMarkers, GRID_DIMENSION) + "\n\n";
+    answer += board.join("\n").replace(/,/g, "") + "\n\n";
 }
 
-console.log(outputBuffer.trim());
+console.log(answer.trim());

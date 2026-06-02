@@ -1,94 +1,31 @@
-var InputProcessorFactory = (function() {
-    function createInputProcessor(rawTextContent) {
-        return new InputProcessor(rawTextContent);
-    }
+const fs = require('fs');
 
-    function InputProcessor(rawTextContent) {
-        this._sourceLines = rawTextContent.trim().split("\n");
-        this._currentLineIndex = 0;
-        this._currentLineWords = [];
-        this._currentWordIndex = 0;
-    }
+const text = fs.readFileSync('/dev/stdin', 'utf8');
+const rows = text.trim().split('\n');
+let first = rows[0].split(' ').reverse().pop();
 
-    InputProcessor.prototype.getNextAtom = function(returnAsString) {
-        if (this._currentWordIndex >= this._currentLineWords.length) {
-            if (this._currentLineIndex >= this._sourceLines.length) {
-                return undefined;
-            }
-            const lineContent = this._sourceLines[this._currentLineIndex];
-            this._currentLineWords = lineContent.split(" ");
-            this._currentWordIndex = 0;
-            this._currentLineIndex++;
-        }
+const size = first.length;
+const seenAt = Array.from({ length: 26 }, () => [-1]);
 
-        const atomValue = this._currentLineWords[this._currentWordIndex];
-        this._currentWordIndex++;
-
-        return returnAsString ? atomValue : +atomValue;
-    };
-
-    InputProcessor.prototype.getNextLine = function(returnAsStrings) {
-        if (this._currentLineIndex >= this._sourceLines.length) {
-            return undefined;
-        }
-        this._currentLineWords = [];
-        this._currentWordIndex = 0;
-
-        const lineContent = this._sourceLines[this._currentLineIndex++];
-        const words = lineContent.split(" ");
-        return returnAsStrings ? words : words.map(val => +val);
-    };
-
-    InputProcessor.prototype.getMatrix = function(rowCount, returnAsStrings) {
-        const resultMatrix = [];
-        for (let i = 0; i < rowCount; i++) {
-            resultMatrix.push(this.getNextLine(returnAsStrings));
-        }
-        return resultMatrix;
-    };
-
-    InputProcessor.prototype.getRawLines = function(count, returnAsStrings) {
-        const lines = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex + count);
-        this._currentLineIndex += count;
-        return returnAsStrings ? lines : lines.map(val => +val);
-    };
-
-    return createInputProcessor;
-})();
-
-var inputHandler = InputProcessorFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-function initializeMultiArray(initialValue, ...dimensions) {
-    const [currentDimensionSize, ...remainingDimensions] = dimensions;
-
-    if (currentDimensionSize === undefined) {
-        return initialValue;
-    }
-
-    return Array.from({ length: currentDimensionSize }, () =>
-        initializeMultiArray(initialValue, ...remainingDimensions)
-    );
+for (let p = 0; p < size; p++) {
+  const bucket = first.charCodeAt(p) - 97;
+  if (bucket >= 0 && bucket < 26) {
+    seenAt[bucket].push(p);
+  }
 }
 
-console.log(determineOptimalExclusion());
+let answer = size;
 
-function determineOptimalExclusion() {
-    const inputSequence = inputHandler.getNextAtom(true);
-    const sequenceLength = inputSequence.length;
+for (const places of seenAt) {
+  places.push(size);
 
-    let minimumMaxSegment = sequenceLength;
+  let longest = 0;
+  for (let i = 1; i < places.length; i++) {
+    const gap = places[i] - places[i - 1] - 1;
+    if (gap > longest) longest = gap;
+  }
 
-    Array.from({ length: 26 }, (_, charCodeOffset) => String.fromCharCode(97 + charCodeOffset))
-        .forEach(charToExclude => {
-            const segments = inputSequence.split(charToExclude);
-
-            const maxSegmentLength = segments.reduce((currentMax, segment) =>
-                Math.max(currentMax, segment.length), 0);
-
-            if (maxSegmentLength < minimumMaxSegment) {
-                minimumMaxSegment = maxSegmentLength;
-            }
-        });
-
-    return minimumMaxSegment;
+  if (longest < answer) answer = longest;
 }
+
+console.log(answer);

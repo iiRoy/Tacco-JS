@@ -1,38 +1,26 @@
-process.stdin.on("data", function(inputBuffer) {
-    const processInputData = (dataChunk) => {
-        const rawInputContent = String(dataChunk);
-        const cleanedInputContent = rawInputContent.trim();
-        const inputLineSegments = cleanedInputContent.split("\n");
+process.stdin.on("data", function(dato) {
+    var texto = dato + "";
+    var lineas = texto.trim().split("\n");
+    var limite = +lineas[0];
+    var lista = [];
 
-        const initialArraySize = parseInt(inputLineSegments[0], 10);
-        let dataElements = [];
+    while (lista[limite] = limite--) {
+    }
 
-        // Initialize dataElements array such that dataElements[i] = i
-        dataElements = Array.from({ length: initialArraySize + 1 }, (_, currentIdx) => currentIdx);
+    var cambios = lineas.slice(2);
+    cambios.some(function(fila, temporal) {
+        var partes = fila.split(",");
+        var primero = +partes[0];
+        var segundo = +partes[1];
 
-        // Helper function to swap two elements in an array
-        const swapArrayElements = (targetArray, indexA, indexB) => {
-            const valueA = targetArray[indexA];
-            targetArray[indexA] = targetArray[indexB];
-            targetArray[indexB] = valueA;
-        };
+        temporal = lista[primero];
+        lista[primero] = lista[segundo];
+        lista[segundo] = temporal;
+    });
 
-        // Process swap operations from input lines
-        const swapOperationLines = inputLineSegments.slice(2);
-        for (let i = 0; i < swapOperationLines.length; i++) {
-            const operationString = swapOperationLines[i];
-            const indicesToSwap = operationString.split(",");
-            const firstSwapIndex = parseInt(indicesToSwap[0], 10);
-            const secondSwapIndex = parseInt(indicesToSwap[1], 10);
-            swapArrayElements(dataElements, firstSwapIndex, secondSwapIndex);
-        }
-
-        // Output the final state of the array, excluding the element at index 0
-        const elementsForOutput = dataElements.slice(1);
-        for (let i = 0; i < elementsForOutput.length; i++) {
-            console.log(elementsForOutput[i]);
-        }
-    };
-
-    processInputData(inputBuffer);
+    var resultado = lista.slice(1);
+    resultado.some(function(valor) {
+        var salida = valor;
+        console.log(salida);
+    });
 }).resume();

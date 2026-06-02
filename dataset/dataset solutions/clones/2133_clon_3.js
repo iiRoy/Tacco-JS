@@ -1,25 +1,16 @@
-function processInputData(rawInputString) {
-  const inputParts = rawInputString.split(' ');
+function executeConversionCounter(rawInput) {
+  const pieces = rawInput.split(" ");
+  let numberValue = Number(pieces[0]);
+  const targetBase = Number(pieces[1]);
 
-  const [decimalNumberString, baseString] = inputParts;
+  let convertedDigits = "";
 
-  let currentNumberValue = Number(decimalNumberString);
-  const conversionBase = Number(baseString);
-
-  let calculatedDigitCount = 0;
-
-  if (currentNumberValue === 0) {
-    calculatedDigitCount = 0;
-  } else {
-    while (currentNumberValue > 0) {
-      calculatedDigitCount++;
-
-      const divisionQuotient = currentNumberValue / conversionBase;
-      currentNumberValue = Math.floor(divisionQuotient);
-    }
+  while (numberValue > 0) {
+    convertedDigits += numberValue % targetBase;
+    numberValue = Math.floor(numberValue / targetBase);
   }
 
-  console.log(calculatedDigitCount);
+  console.log(convertedDigits.length);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+executeConversionCounter(require("fs").readFileSync("/dev/stdin", "utf8"));

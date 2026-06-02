@@ -1,64 +1,60 @@
-function ProcessInput(rawData) {
-  const lineSegments = rawData.split("\n");
-  const elementCount = parseInt(lineSegments[0], 10);
-  const numericSequence = lineSegments[1].split(" ").map(val => parseInt(val, 10));
+function Main(input) {
+  const rows = input.split("\n");
+  const amount = parseInt(rows[0], 10);
+  const numbers = rows[1].split(" ").map(function (piece) {
+    return parseInt(piece, 10);
+  });
 
-  const finalAdjustmentResult = numericSequence.reduce((accumulator, currentVal, idx, fullArr) => {
-    let { currentAdjustedSum, totalModifications } = accumulator;
+  function buildInitialState(list) {
+    let head = list[0];
+    let total = 0;
 
-    // `previousIterationAdjustedSum` holds the `acc` value *after* adjustment from the previous iteration.
-    // This corresponds to `arr[i-1]` in the original logic for `idx > 0`.
-    const previousIterationAdjustedSum = currentAdjustedSum;
+    if (head === 0) {
+      const neighbor = list[1];
 
-    // `rawCumulativeSum` is the sum of elements up to the current one, *before* any adjustment
-    // for the current iteration. This corresponds to `acc += a[i]` in the original.
-    let rawCumulativeSum = currentAdjustedSum + currentVal;
-
-    let adjustedValueForCurrentIteration = rawCumulativeSum;
-    let modificationsMadeThisIteration = 0;
-
-    if (idx === 0) {
-      // Special handling for the very first element (index 0)
-      if (adjustedValueForCurrentIteration === 0) {
-        // If the first element (a[0]) is 0, we need to adjust it based on the sign of a[1].
-        // Note: fullArr[idx + 1] accesses a[1]. If n=1, this will be undefined,
-        // leading to NaN in calculations, which matches original behavior.
-        if (fullArr[idx + 1] >= 0) {
-          // If a[1] is non-negative, adjust `adjustedValueForCurrentIteration` to be negative.
-          adjustedValueForCurrentIteration -= (fullArr[idx + 1] - 1);
-          if (adjustedValueForCurrentIteration === 0) adjustedValueForCurrentIteration--;
-          modificationsMadeThisIteration = Math.abs(adjustedValueForCurrentIteration);
-        } else {
-          // If a[1] is negative, adjust `adjustedValueForCurrentIteration` to be positive.
-          adjustedValueForCurrentIteration += (Math.abs(fullArr[idx + 1]) - 1);
-          if (adjustedValueForCurrentIteration === 0) adjustedValueForCurrentIteration++;
-          modificationsMadeThisIteration = adjustedValueForCurrentIteration;
-        }
-      }
-    } else {
-      // For subsequent elements (index > 0)
-      if (previousIterationAdjustedSum > 0) {
-        // If the previous adjusted sum was positive, the current adjusted sum must become negative.
-        if (adjustedValueForCurrentIteration >= 0) {
-          modificationsMadeThisIteration = (adjustedValueForCurrentIteration + 1);
-          adjustedValueForCurrentIteration -= modificationsMadeThisIteration; // Forces it to -1
-        }
-      } else { // previousIterationAdjustedSum <= 0
-        // If the previous adjusted sum was non-positive, the current adjusted sum must become positive.
-        if (adjustedValueForCurrentIteration <= 0) {
-          modificationsMadeThisIteration = (Math.abs(adjustedValueForCurrentIteration) + 1);
-          adjustedValueForCurrentIteration += modificationsMadeThisIteration; // Forces it to 1
-        }
+      if (neighbor >= 0) {
+        head = 1 - neighbor;
+        if (head === 0) head = -1;
+        total = Math.abs(head);
+      } else {
+        head = Math.abs(neighbor) - 1;
+        if (head === 0) head = 1;
+        total = head;
       }
     }
 
-    return {
-      currentAdjustedSum: adjustedValueForCurrentIteration, // This becomes the `acc` for the next iteration, after adjustment
-      totalModifications: totalModifications + modificationsMadeThisIteration
-    };
-  }, { currentAdjustedSum: 0, totalModifications: 0 }); // Initial state for the reducer
+    return { edge: head, total: total };
+  }
 
-  console.log(finalAdjustmentResult.totalModifications);
+  function projectToRequiredSide(state, nextValue) {
+    const border = state.edge > 0 ? -1 : 1;
+    const candidate = state.edge + nextValue;
+    const outside = border > 0 ? candidate <= 0 : candidate >= 0;
+
+    if (!outside) {
+      return { edge: candidate, total: state.total };
+    }
+
+    return {
+      edge: border,
+      total: state.total + Math.abs(candidate - border)
+    };
+  }
+
+  if (!(amount > 0)) {
+    console.log(0);
+    return;
+  }
+
+  let machine = buildInitialState(numbers);
+  let index = 1;
+
+  while (index < amount) {
+    machine = projectToRequiredSide(machine, numbers[index]);
+    index++;
+  }
+
+  console.log(machine.total);
 }
 
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

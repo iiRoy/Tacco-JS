@@ -1,24 +1,16 @@
 "use strict";
 
-function processInputData(rawData) {
-  const cleanedInputString = rawData.trim();
-  const characterSequence = cleanedInputString.split('');
-
-  let oneCharacterCount = 0;
-  const targetCharacter = '1';
-
-  for (const currentCharacter of characterSequence) {
-    if (currentCharacter === targetCharacter) {
-      oneCharacterCount++;
-    }
-  }
-
-  console.log(oneCharacterCount);
+function main(src) {
+  const trimmedInput = src.trim();
+  const characterList = trimmedInput.split('');
+  const filteredValues = characterList.filter(function (current) {
+    const isOne = current == 1;
+    return isOne;
+  });
+  const total = filteredValues.length;
+  console.log(total);
 }
 
-const fsModule = require('fs');
-const stdinPath = '/dev/stdin';
-const utf8Encoding = 'utf8';
-
-const inputBuffer = fsModule.readFileSync(stdinPath, utf8Encoding);
-processInputData(inputBuffer);
+const fs = require('fs');
+const inputData = fs.readFileSync('/dev/stdin', 'utf8');
+main(inputData);

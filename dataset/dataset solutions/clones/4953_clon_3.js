@@ -1,32 +1,29 @@
-function processInputData(rawData) {
-  const inputLines = rawData.split("\n");
-  const numElementsStr = inputLines[0]; // Corresponds to original 'N', though unused in logic
-  const rabbitPositionsStr = inputLines[1];
+// inputに入力データ全体が入る
+function Main(inputText) {
+  var inputLines = inputText.split("\n");
+  var N = inputLines[0];
+  var r = inputLines[1];
 
-  const rawPositionStrings = rabbitPositionsStr.split(" ");
-  const parsedPositions = [];
-  for (let k = 0; k < rawPositionStrings.length; k++) {
-    parsedPositions.push(Number(rawPositionStrings[k]));
-  }
+  var rabbitTokens = r.split(" ");
+  var rabbits = rabbitTokens.map(function(i) {
+    return parseInt(i);
+  });
 
-  let mutualPointerCount = 0;
-  const totalRabbits = parsedPositions.length;
+  var c = 0;
+  rabbits.forEach(function(rabbit, i, s) {
+    var pointedIndex = rabbit - 1;
+    var expectedRabbit = i + 1;
+    var isPair = s[pointedIndex] === expectedRabbit;
 
-  for (let currentIndex = 0; currentIndex < totalRabbits; currentIndex++) {
-    const currentRabbitValue = parsedPositions[currentIndex];
-    const currentRabbitOneBased = currentIndex + 1;
-
-    const targetIndex = currentRabbitValue - 1;
-
-    if (targetIndex >= 0 && targetIndex < totalRabbits) {
-      const pointedRabbitValue = parsedPositions[targetIndex];
-      if (pointedRabbitValue === currentRabbitOneBased) {
-        mutualPointerCount++;
-      }
+    if (isPair) {
+      c += 1;
+    } else {
+      c += 0;
     }
-  }
+  });
 
-  console.log(mutualPointerCount / 2);
+  var result = c / 2;
+  console.log(result);
 }
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

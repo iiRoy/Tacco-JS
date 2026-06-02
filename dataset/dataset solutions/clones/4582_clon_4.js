@@ -1,57 +1,38 @@
 "use strict";
 
-const processInput = (rawInput) => {
-    const inputLines = rawInput.trim().split("\n");
+const fs = require("fs");
 
-    const [entryCountStr, thresholdValueStr] = inputLines[0].split(" ");
-    const entryCount = Number(entryCountStr);
-    const thresholdValue = Number(thresholdValueStr);
+const raw = fs.readFileSync("/dev/stdin", "utf8").trim().split(/\s+/).map(Number);
 
-    const initialPairs = inputLines.slice(1, entryCount + 1).map(lineContent =>
-        lineContent.split(" ").map(Number)
-    );
+const n = raw[0];
+const k = raw[1];
 
-    let currentCumulativeSum = 0;
-    let previousQuantity = 0;
+const nums = [];
+const amounts = [];
 
-    const cumulativeRecords = initialPairs.map((pairEntry, recordIndex) => {
-        const [identifierValue, quantityValue] = pairEntry;
-        let recordCumulativeQuantity;
+for (let i = 0, p = 2; i < n; i++, p += 2) {
+    nums.push(raw[p]);
+    amounts.push(raw[p + 1]);
+}
 
-        if (recordIndex === 0) {
-            recordCumulativeQuantity = quantityValue;
-            currentCumulativeSum = quantityValue;
-        } else {
-            currentCumulativeSum += previousQuantity;
-            recordCumulativeQuantity = currentCumulativeSum;
-        }
+const records = [];
+let shiftedTotal = amounts[0];
 
-        previousQuantity = quantityValue;
+for (let i = 0; i < n; i++) {
+    if (i > 0) shiftedTotal += amounts[i - 1];
 
-        return {
-            identifier: identifierValue,
-            quantity: quantityValue,
-            cumulativeQuantity: recordCumulativeQuantity
-        };
+    records.push({
+        num: nums[i],
+        amount: amounts[i],
+        totalAmount: shiftedTotal
     });
 
-    const matchingRecordIndex = cumulativeRecords.findIndex(
-        (recordItem) => recordItem.cumulativeQuantity >= thresholdValue
-    );
-
-    if (matchingRecordIndex !== -1) {
-        const matchedRecord = cumulativeRecords[matchingRecordIndex];
-        const priorRecord = cumulativeRecords[matchingRecordIndex - 1];
-
-        const finalIdentifier =
-            (matchedRecord.cumulativeQuantity - matchedRecord.quantity < thresholdValue)
-                ? matchedRecord.identifier
-                : priorRecord.identifier;
-
-        console.log(finalIdentifier);
-    } else {
-        console.log(JSON.stringify(cumulativeRecords));
+    if (shiftedTotal >= k) {
+        const beforeThisAmount = shiftedTotal - amounts[i];
+        const answer = beforeThisAmount < k ? nums[i] : nums[i - 1];
+        console.log(answer);
+        process.exit(0);
     }
-};
+}
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+console.log(JSON.stringify(records));

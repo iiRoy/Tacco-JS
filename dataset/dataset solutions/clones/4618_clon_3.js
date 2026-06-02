@@ -1,8 +1,5 @@
 const extractAndCapitalizeFirstChar = (textSegment) => {
-  if (textSegment && textSegment.length > 0) {
-    return textSegment.charAt(0).toUpperCase();
-  }
-  return '';
+  return textSegment.charAt(0).toUpperCase();
 };
 
 const processInput = (rawData) => {
@@ -13,8 +10,7 @@ const processInput = (rawData) => {
 
   const [firstChar1, firstChar2, firstChar3] = transformedChars;
 
-  const finalOutputString = [firstChar1, firstChar2, firstChar3].join('');
-  console.log(finalOutputString);
+  console.log(firstChar1 + firstChar2 + firstChar3);
 };
 
 const fileSystemModule = require("fs");

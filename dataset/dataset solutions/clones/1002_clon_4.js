@@ -1,28 +1,69 @@
-config = { input: '/dev/stdin', newline: '\n' };
+//config = { input: 'tmp', newline: '\r\n' }; // win
+config = { input: '/dev/stdin', newline: '\n' }; // linux
 
-const fileSystemModule = require('fs');
-let fileContentSegments = fileSystemModule.readFileSync(config.input, 'ascii')
+A = require('fs').readFileSync(config.input, 'ascii')
   .split(config.newline, 2);
-let parsedNumbers = fileContentSegments[1].split(' ').map(Number);
+A = A[1].split(' ').map(Number);
 
-let operationCount = performInsertionSort(parsedNumbers);
-console.log(parsedNumbers.join(' '));
-console.log(operationCount);
+cnt = rebuild(A);
+console.log(A.join(' '));
+console.log(cnt);
 
-function performInsertionSort(dataArray) {
-  let totalShifts = 0;
-  const arrayLength = dataArray.length;
+function rebuild(A) {
+  var total, left, right, part, sorted, i, k;
+  total = 0;
+  left = 0;
 
-  for (let currentPosition = 1; currentPosition < arrayLength; currentPosition++) {
-    let valueToInsert = dataArray[currentPosition];
-    let comparisonPosition = currentPosition - 1;
-
-    while (comparisonPosition >= 0 && dataArray[comparisonPosition] > valueToInsert) {
-      dataArray[comparisonPosition + 1] = dataArray[comparisonPosition];
-      comparisonPosition--;
-      totalShifts++;
+  for (right = 0; right <= A.length; right++) {
+    if (right === A.length || Number.isNaN(A[right])) {
+      part = A.slice(left, right);
+      if (part.length > 1) {
+        sorted = mergeCount(part);
+        total += sorted.c;
+        for (k = 0; k < sorted.a.length; k++) {
+          A[left + k] = sorted.a[k];
+        }
+      }
+      left = right + 1;
     }
-    dataArray[comparisonPosition + 1] = valueToInsert;
   }
-  return totalShifts;
+  return total;
+}
+
+function mergeCount(list) {
+  var mid, l, r, merged, i, j, c;
+  if (list.length < 2) {
+    return { a: list.slice(), c: 0 };
+  }
+
+  mid = list.length >> 1;
+  l = mergeCount(list.slice(0, mid));
+  r = mergeCount(list.slice(mid));
+
+  merged = [];
+  i = 0;
+  j = 0;
+  c = l.c + r.c;
+
+  while (i < l.a.length && j < r.a.length) {
+    if (l.a[i] <= r.a[j]) {
+      merged.push(l.a[i]);
+      i++;
+    } else {
+      merged.push(r.a[j]);
+      c += l.a.length - i;
+      j++;
+    }
+  }
+
+  while (i < l.a.length) {
+    merged.push(l.a[i]);
+    i++;
+  }
+  while (j < r.a.length) {
+    merged.push(r.a[j]);
+    j++;
+  }
+
+  return { a: merged, c: c };
 }

@@ -1,13 +1,31 @@
-const fileSystemModule = require("fs");
-const rawInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-const inputLinesArray = rawInputContent.split('\n');
-const processedLines = inputLinesArray.filter(function(lineSegment) {
-    return lineSegment.length > 0;
-});
-for (const currentLineString of processedLines) {
-    const numericValue = Number(currentLineString);
-    const squaredValue = Math.pow(numericValue, 2);
-    const dividedValue = squaredValue / 98;
-    const finalCalculatedValue = Math.floor(dividedValue + 2);
-    console.log(finalCalculatedValue);
+'use strict';
+
+const fs = require('fs');
+const source = fs.readFileSync('/dev/stdin', 'utf8');
+const signedCell = new Int32Array(1);
+
+function asOriginalInteger(value) {
+  signedCell[0] = value;
+  return signedCell[0];
 }
+
+function evaluateRecord(record) {
+  if (!record) {
+    return;
+  }
+
+  const base = Number(record);
+  const square = [base, base].reduce((product, item) => product * item, 1);
+  const measured = square / (7 * 14) + 2;
+  console.log(asOriginalInteger(measured));
+}
+
+let left = 0;
+for (let right = 0; right < source.length; right++) {
+  if (source.charCodeAt(right) === 10) {
+    evaluateRecord(source.slice(left, right));
+    left = right + 1;
+  }
+}
+
+evaluateRecord(source.slice(left));

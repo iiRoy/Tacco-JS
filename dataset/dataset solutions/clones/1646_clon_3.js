@@ -1,79 +1,219 @@
-function processInput(rawData) {
-    const lines = rawData.split("\n");
+function Resolver(entrada) {
 
-    const initialColorStrings = lines[0].split(" ");
-    const initialRed = parseInt(initialColorStrings[0]);
-    const initialGreen = parseInt(initialColorStrings[1]);
-    const initialBlue = parseInt(initialColorStrings[2]);
+    let lineas = entrada.split("\n");
+    card = lineas[0].split(" ");
+	
+    let rojo = parseInt(card[0]);
+    let verde = parseInt(card[1]);
+    let azul = parseInt(card[2]);
 
-    const baseColors = [initialRed, initialGreen, initialBlue];
+    const veces = parseInt(lineas[1]);
+    let encontrado = 0;
 
-    const operationDepth = parseInt(lines[1]);
-
-    let isConditionMet = false;
-
-    const checkAscendingOrder = (colorsArray) => {
-        return colorsArray[0] < colorsArray[1] && colorsArray[1] < colorsArray[2];
-    };
-
-    const applyOperationsAndCheck = (kValue, chosenIndices, originalValues, foundResultRef) => {
-        const tempColors = [...originalValues];
-
-        for (let i = 0; i < kValue; i++) {
-            const currentLoopIndex = chosenIndices[i];
-            
-            if (kValue >= 5 && i === 4) {
-                tempColors[currentLoopIndex] = tempColors[chosenIndices[3]] * 2;
-            } else if (kValue === 7 && i === 6) {
-                tempColors[currentLoopIndex] = tempColors[chosenIndices[5]] * 2;
-            } else {
-                tempColors[currentLoopIndex] *= 2;
-            }
-        }
-
-        const conditionMetForThisCombination = checkAscendingOrder(tempColors);
-        if (conditionMetForThisCombination) {
-            foundResultRef.value = true;
-            if (kValue === 1) {
-                console.log("Yes");
-            }
-        }
-        return conditionMetForThisCombination;
-    };
-
-    const generateAndCheckCombinations = (currentLevel, maxLevel, chosenIndices, originalValues, foundResultRef) => {
-        if (foundResultRef.value) {
-            return;
-        }
-
-        if (currentLevel === maxLevel) {
-            applyOperationsAndCheck(maxLevel, chosenIndices, originalValues, foundResultRef);
-            return;
-        }
-
-        for (let idx = 0; idx < 3; idx++) {
-            chosenIndices[currentLevel] = idx;
-            generateAndCheckCombinations(currentLevel + 1, maxLevel, chosenIndices, originalValues, foundResultRef);
-            if (foundResultRef.value) {
-                return;
-            }
-        }
-    };
-
-    if (operationDepth === 0) {
-        isConditionMet = false;
-    } else {
-        const selectedIndices = new Array(operationDepth);
-        const resultContainer = { value: false };
-        generateAndCheckCombinations(0, operationDepth, selectedIndices, baseColors, resultContainer);
-        isConditionMet = resultContainer.value;
+    function duplicar(posicion) {
+        card[posicion] = card[posicion] * 2;
     }
 
-    if (isConditionMet) {
-        console.log("Yes");
-    } else {
-        console.log("No");
+    function duplicarDesde(destino, origen) {
+        card[destino] = card[origen] * 2;
+    }
+
+    function enOrden() {
+        let primeraComparacion = card[0] < card[1];
+        let segundaComparacion = card[1] < card[2];
+        return primeraComparacion && segundaComparacion;
+    }
+
+    function restaurar() {
+        card[0] = rojo;
+        card[1] = verde;
+        card[2] = azul;
+    }
+
+    if (veces == 1) {
+        for( let x=0; x < 3 ; x++){
+            duplicar(x);
+
+            if(enOrden()) {
+                encontrado = 1;
+                console.log( "Yes" );
+                break;
+            }
+
+            restaurar();
+        }
+        if(encontrado==1) {
+            console.log("Yes");
+        } else {
+            console.log("No");
+        }
+    } else if(veces == 2){
+        for( let x=0; x < 3 ; x++){
+            for (let y=0; y < 3 ; y++){
+                duplicar(x);
+                duplicar(y);
+
+                if(enOrden()) {
+                    encontrado = 1;
+                    break;
+                }
+
+                restaurar();
+            }
+        }
+        if(encontrado==1) {
+            console.log("Yes");
+        } else {
+            console.log("No");
+        }
+
+    } else if (veces == 3){
+        for ( let x=0; x < 3 ; x++){
+            for ( let y=0; y < 3 ; y++) {
+                for ( let z=0; z < 3 ; z++) {
+                    duplicar(x);
+                    duplicar(y);
+                    duplicar(z);
+                  
+                    if(enOrden()) {
+                        encontrado = 1;
+                        break;
+                    }
+
+                    restaurar();
+                }
+            }
+        }
+        if(encontrado==1) {
+            console.log("Yes");
+        } else {
+            console.log("No");
+        }
+    } else if (veces == 4){
+        for ( let x=0; x < 3 ; x++){
+            for ( let y=0; y < 3 ; y++) {
+                for ( let z=0; z < 3 ; z++) {
+                    for (let s=0; s < 3 ; s++){
+                        duplicar(x);
+                        duplicar(y);
+                        duplicar(z);
+                        duplicar(s);
+    
+                        if(enOrden()) {
+                            encontrado = 1;
+                            break;
+                        }
+
+                        restaurar();
+                    }
+                }
+            }
+        }
+        if(encontrado==1) {
+            console.log("Yes");
+        } else {
+            console.log("No");
+        }
+    } else if (veces == 5){
+        for ( let x=0; x < 3 ; x++){
+            for ( let y=0; y < 3 ; y++) {
+                for ( let z=0; z < 3 ; z++) {
+                    for (let s=0; s < 3 ; s++){
+                        for (let t=0; t<3 ; t++){
+                            duplicar(x);
+                            duplicar(y);
+                            duplicar(z);
+                            duplicar(s);
+                            duplicarDesde(t, s);
+        
+                            if(enOrden()) {
+                                encontrado = 1;
+                                break;
+                            }
+
+                            restaurar();
+                        }
+                    }
+                }
+            }
+        }
+        if(encontrado==1) {
+            console.log("Yes");
+        } else {
+            console.log("No");
+        }
+    } else if (veces==6){
+        for ( let x=0; x < 3 ; x++){
+            for ( let y=0; y < 3 ; y++) {
+                for ( let z=0; z < 3 ; z++) {
+                    for (let s=0; s < 3 ; s++){
+                        for (let t=0; t<3 ; t++){
+                            for (let u=0; u<3 ; u++){
+                                duplicar(x);
+                                duplicar(y);
+                                duplicar(z);
+                                duplicar(s);
+                                duplicarDesde(t, s);
+                                duplicar(u);
+            
+                                if(enOrden()) {
+                                    encontrado = 1;
+                                    break;
+                                }
+
+                                restaurar();
+                            }
+                            
+                        }
+                    
+                    }
+                }
+            }
+        }
+        if(encontrado==1) {
+            console.log("Yes");
+        } else {
+            console.log("No");
+        }
+    }else if (veces==7){
+        for ( let x=0; x < 3 ; x++){
+            for ( let y=0; y < 3 ; y++) {
+                for ( let z=0; z < 3 ; z++) {
+                    for (let s=0; s < 3 ; s++){
+                        for (let t=0; t<3 ; t++){
+                            for (let u=0; u<3 ; u++){
+                                for (let v=0; v<3 ;v++){
+
+                                    duplicar(x);
+                                    duplicar(y);
+                                    duplicar(z);
+                                    duplicar(s);
+                                    duplicarDesde(t, s);
+                                    duplicar(u);
+                                    duplicarDesde(v, u);
+                
+                                    if(enOrden()) {
+                                        encontrado = 1;
+                                        break;
+                                    }
+
+                                    restaurar();
+                                }
+
+                            }
+                            
+                        }
+                    
+                    }
+                }
+            }
+        }
+        if(encontrado==1) {
+            console.log("Yes");
+        } else {
+            console.log("No");
+        }
     }
 }
-
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
+Resolver(require("fs").readFileSync("/dev/stdin", "utf8"));

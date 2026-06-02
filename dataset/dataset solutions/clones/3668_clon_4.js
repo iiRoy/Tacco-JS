@@ -1,22 +1,35 @@
 "use strict";
 
-const processInput = rawData => {
-    const lineSegments = rawData.trim().split('\n');
-    const elementCount = Number.parseInt(lineSegments[0], 10);
-    const hueSequence = lineSegments[1].split(' ');
+const fs = require("fs");
+const text = fs.readFileSync("/dev/stdin", "utf8");
 
-    let alterationCount = 0;
-    let scanIndex = 0;
+const lines = text.trim().split("\n");
+const amount = parseInt(lines[0], 10);
+const palette = lines[1].split(" ");
 
-    while (scanIndex < elementCount - 1) {
-        if (hueSequence[scanIndex] === hueSequence[scanIndex + 1]) {
-            alterationCount++;
-            scanIndex += 2;
-        } else {
-            scanIndex++;
-        }
+let answer = 0;
+let runValue;
+let runLength = 0;
+let started = false;
+
+for (let position = 0; position < amount; position++) {
+    const sample = position < palette.length ? palette[position] : undefined;
+
+    if (!started) {
+        started = true;
+        runValue = sample;
+        runLength = 1;
+    } else if (runValue == sample) {
+        runLength++;
+    } else {
+        answer += Math.floor(runLength / 2);
+        runValue = sample;
+        runLength = 1;
     }
-    console.log(alterationCount);
-};
+}
 
-processInput(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+if (started) {
+    answer += Math.floor(runLength / 2);
+}
+
+console.log(answer);

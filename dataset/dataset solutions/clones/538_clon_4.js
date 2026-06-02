@@ -1,52 +1,53 @@
-var fileSystem = require('fs');
-var rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
-var inputLines = rawInput.trim().split("\n");
+const fs = require("fs");
 
-var arrayLength = parseInt(inputLines.shift(), 10);
-var initialArray = inputLines.shift().split(" ").map(Number);
-var sortedInitialArray = initialArray.slice().sort((valA, valB) => valA - valB);
+const lines = fs.readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-var swapCount = parseInt(inputLines.shift(), 10);
-var swapOperations = inputLines.map(line => line.split(" ").map(Number).map(val => val - 1));
-swapOperations.unshift([0, 0]);
+const n = Number(lines.shift());
+const originalNumbers = lines.shift().split(" ").map(Number);
+const orderedNumbers = originalNumbers.slice().sort((a, b) => a - b);
+const operationLimit = Number(lines.shift());
 
-var currentMismatchState = new Map();
-var targetMismatchState = new Map();
+const operations = lines.map(line => line.split(" ").map(value => Number(value) - 1));
+operations.unshift([0, 0]);
 
-for (let k = 0; k < initialArray.length; k++) {
-    if (initialArray[k] !== sortedInitialArray[k]) {
-        currentMismatchState.set(k, initialArray[k]);
-        targetMismatchState.set(k, sortedInitialArray[k]);
+const activeIndexes = [];
+const currentValues = [];
+const targetValues = [];
+
+for (let index = 0; index < n; index++) {
+    if (originalNumbers[index] !== orderedNumbers[index]) {
+        activeIndexes.push(index);
+        currentValues.push(originalNumbers[index]);
+        targetValues.push(orderedNumbers[index]);
     }
 }
 
-var desiredStateString = Array.from(targetMismatchState.values()).join(",");
+const positionInActiveList = {};
+activeIndexes.forEach((index, place) => {
+    positionInActiveList[index] = place;
+});
 
-var resultIndex = -1;
+const targetSignature = targetValues.join(",");
+let answer = -1;
 
-for (let opIdx = 0; opIdx <= swapCount; opIdx++) {
-    let [firstIdx, secondIdx] = swapOperations[opIdx];
+for (let step = 0; step <= operationLimit; step++) {
+    const [leftIndex, rightIndex] = operations[step];
 
-    let valueAtFirst = currentMismatchState.get(firstIdx);
-    let valueAtSecond = currentMismatchState.get(secondIdx);
+    const leftPlace = positionInActiveList[leftIndex];
+    const rightPlace = positionInActiveList[rightIndex];
 
-    if (valueAtSecond !== undefined) {
-        currentMismatchState.set(firstIdx, valueAtSecond);
-    } else {
-        currentMismatchState.delete(firstIdx);
+    if (leftPlace !== undefined || rightPlace !== undefined) {
+        const leftValue = leftPlace !== undefined ? currentValues[leftPlace] : undefined;
+        const rightValue = rightPlace !== undefined ? currentValues[rightPlace] : undefined;
+
+        if (leftPlace !== undefined) currentValues[leftPlace] = rightValue;
+        if (rightPlace !== undefined) currentValues[rightPlace] = leftValue;
     }
 
-    if (valueAtFirst !== undefined) {
-        currentMismatchState.set(secondIdx, valueAtFirst);
-    } else {
-        currentMismatchState.delete(secondIdx);
-    }
-
-    var currentStateString = Array.from(currentMismatchState.values()).join(",");
-    if (currentStateString === desiredStateString) {
-        resultIndex = opIdx;
+    if (currentValues.join(",") === targetSignature) {
+        answer = step;
         break;
     }
 }
 
-console.log(resultIndex);
+console.log(answer);

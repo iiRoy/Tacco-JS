@@ -1,50 +1,95 @@
 "use strict";
 
-// Removed Babel-generated helper functions for array/iterable handling.
-// These are not essential for the logic and are typically transpiler artifacts
-// and are no longer needed due to direct array access and simplified loop structure.
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
 
-function mainProcess() {
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var idx = 0, copy = new Array(arr.length); idx < arr.length; idx++) { copy[idx] = arr[idx]; } return copy; } }
+
+function _toArray(arr) { return _arrayWithHoles(arr) || _iterableToArray(arr) || _nonIterableRest(); }
+
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
+
+function _slicedToArray(arr, count) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, count) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, count) { var result = []; var normal = true; var failed = false; var storedError = undefined; try { for (var iterator = arr[Symbol.iterator](), item; !(normal = (item = iterator.next()).done); normal = true) { result.push(item.value); if (count && result.length === count) break; } } catch (err) { failed = true; storedError = err; } finally { try { if (!normal && iterator["return"] != null) iterator["return"](); } finally { if (failed) throw storedError; } } return result; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function _main() {
   // ----------
-  (function (rawInputData) {
-    const inputLinesArray = rawInputData.split("\n");
+  (function (inputText) {
+    var lineList = inputText.split("\n");
 
-    // Simplified K extraction by directly accessing the array element,
-    // removing the need for _slicedToArray and its associated Babel helpers.
-    const limitK = parseNumbersFromString(inputLinesArray[0])[0];
+    var parsedFirstLine = splitNum(lineList[0]),
+        slicedFirstLine = _slicedToArray(parsedFirstLine, 1),
+        K = slicedFirstLine[0];
 
-    let currentSuffixString = "";
-    let currentOutputDigit = 1;
+    var suffix = "";
+    var cur = 1;
+    var plannedRange = range(0, K);
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
 
-    // Introduced a temporary constant for clarity and potential future modification.
-    const MAX_SINGLE_DIGIT_VALUE = 9;
+    try {
+      for (var _iterator = plannedRange[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var ignoredIndex = _step.value;
+        var outputPiece = `${cur}${suffix}`;
+        printValue(outputPiece);
+        cur++;
 
-    // Replaced the Babel-generated for...of loop boilerplate with a standard for loop.
-    // This removes all _iterator-related variables and the try...finally block around the loop,
-    // making the iteration explicit and simpler.
-    for (let iterationIndex = 0; iterationIndex < limitK; iterationIndex++) {
-      console.log(`${currentOutputDigit}${currentSuffixString}`);
-      currentOutputDigit++;
-
-      // Rewritten condition slightly and utilized the temporary constant for improved readability.
-      if (currentOutputDigit > MAX_SINGLE_DIGIT_VALUE) {
-        currentOutputDigit = 1;
-        currentSuffixString += "0";
+        if (cur > 9) {
+          cur = 1;
+          var expandedSuffix = suffix + "0";
+          suffix = expandedSuffix;
+        }
+      }
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return != null) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
       }
     }
   })(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-  // Renamed function for clarity.
-  // Simplified its body by removing the redundant Array.isArray check,
-  // as it's always called with a string in this specific program's context.
-  function parseNumbersFromString(inputString) {
-    // Explicitly added radix 10 for parseInt for best practice.
-    return inputString.split(/\s+/).map(numStr => parseInt(numStr, 10));
+  function printValue(value) {
+    console.log(value);
   }
 
-  // The original 'range' generator function is no longer used after the loop simplification,
-  // so it has been removed as dead code.
+  function splitNum(line) {
+    var source = Array.isArray(line) ? line : line.split(/\s+/);
+    var converted = source.map(function (n) {
+      return parseInt(n);
+    });
+    return converted;
+  }
+  /**
+   * Iterates over integers in [start, end).
+   */
+
+
+  function* range(start, end) {
+    for (var i = start; i < end; i++) {
+      var yielded = i;
+      yield yielded;
+    }
+  }
+  /**
+   * Iterates over integers in [end, start) in desc order.
+   */
   // ----------
+
 }
 
-mainProcess();
+_main();

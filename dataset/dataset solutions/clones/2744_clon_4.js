@@ -1,98 +1,74 @@
-const InputReaderFactory = (function() {
-    function createReader(sourceString) {
-        return new DataStreamProcessor(sourceString);
+const fs = require("fs");
+
+const legacyInput = (() => {
+  const cells = fs.readFileSync(0, "utf8").trim().split("\n");
+  let row = 0;
+
+  const numberFromCurrentToken = () => {
+    let cell = cells[row];
+    if (!Array.isArray(cell)) {
+      cell = String(cell).split(" ").reverse();
+      cells[row] = cell;
     }
+    const value = cell.pop();
+    if (cell.length === 0) row++;
+    return Number(value);
+  };
 
-    function DataStreamProcessor(sourceString) {
-        this.sourceLines = sourceString.trim().split("\n");
-        this.currentLineIndex = 0;
-        this.currentLineTokens = [];
-    }
+  const numericRows = (count) => {
+    const part = cells.slice(row, row + count);
+    row += count;
+    return part.map(Number);
+  };
 
-    DataStreamProcessor.prototype.extractNextValue = function(asString) {
-        if (this.currentLineTokens.length === 0) {
-            if (this.currentLineIndex >= this.sourceLines.length) {
-                return undefined;
-            }
-            this.currentLineTokens = this.sourceLines[this.currentLineIndex].split(" ");
-        }
-        const nextToken = this.currentLineTokens.shift();
-        if (this.currentLineTokens.length === 0) {
-            this.currentLineIndex++;
-        }
-        return asString ? nextToken : +nextToken;
-    };
-
-    DataStreamProcessor.prototype.fetchLineValues = function(asStrings) {
-        const lineContent = this.sourceLines[this.currentLineIndex++];
-        const tokens = lineContent.split(" ");
-        return asStrings ? tokens : tokens.map(val => +val);
-    };
-
-    DataStreamProcessor.prototype.retrieveMatrix = function(numRows, asStrings) {
-        const matrixRows = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex + numRows);
-        this.currentLineIndex += numRows;
-        return asStrings ?
-            matrixRows.map(rowStr => rowStr.split(" ")) :
-            matrixRows.map(rowStr => rowStr.split(" ").map(val => +val));
-    };
-
-    DataStreamProcessor.prototype.acquireRows = function(numRows, asStrings) {
-        const rows = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex + numRows);
-        this.currentLineIndex += numRows;
-        return asStrings ? rows : rows.map(val => +val);
-    };
-
-    return createReader;
+  return { numberFromCurrentToken, numericRows };
 })();
 
-const inputProcessor = InputReaderFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
+const n = legacyInput.numberFromCurrentToken();
+const rows = legacyInput.numericRows(n);
 
-function generateMultiDimArray(fillValue, ...dimensions) {
-    const recursiveBuilder = (dimIndex) => {
-        if (dimIndex === dimensions.length - 1) {
-            return Array(dimensions[dimIndex]).fill(fillValue);
-        } else {
-            return Array(dimensions[dimIndex]).fill(0).map(() => recursiveBuilder(dimIndex + 1));
-        }
-    };
-    return recursiveBuilder(0);
-}
+const exactLengthForBrokenNumbers = (source, limit) => {
+  const piles = [1];
 
-function findInsertionPoint(dataCollection, lowerBound, upperBound, targetElement) {
-    let low = lowerBound;
-    let high = upperBound;
-    let midPoint;
+  const place = (value, left, right) => {
+    if (right - left <= 1) return piles[left] <= value ? right : left;
+    const middle = (left + right) >> 1;
+    return piles[middle] <= value
+      ? place(value, middle, right)
+      : place(value, left, middle);
+  };
 
-    while (low < high) {
-        midPoint = Math.floor((low + high) / 2);
-        if (dataCollection[midPoint] <= targetElement) {
-            low = midPoint + 1;
-        } else {
-            high = midPoint;
-        }
+  for (let index = 0; index < limit; index++) {
+    const value = -source[index];
+    piles[place(value, 0, piles.length)] = value;
+  }
+  return piles.length;
+};
+
+const canUseIndependentDp = (() => {
+  for (let i = 0; i < n; i++) {
+    if (Number.isNaN(-rows[i])) return false;
+  }
+  return true;
+})();
+
+if (!canUseIndependentDp) {
+  console.log(exactLengthForBrokenNumbers(rows, n));
+} else {
+  const values = [1];
+  for (let i = 0; i < n; i++) values.push(-rows[i]);
+
+  const bestEndingHere = Array(values.length).fill(1);
+  let answer = 1;
+
+  for (let i = 0; i < values.length; i++) {
+    for (let j = 0; j < i; j++) {
+      if (values[j] <= values[i] && bestEndingHere[j] + 1 > bestEndingHere[i]) {
+        bestEndingHere[i] = bestEndingHere[j] + 1;
+      }
     }
-    return low;
-}
+    if (bestEndingHere[i] > answer) answer = bestEndingHere[i];
+  }
 
-console.log(solveProblem());
-
-function solveProblem() {
-    const elementCount = inputProcessor.extractNextValue();
-    const inputSequence = inputProcessor.acquireRows(elementCount);
-
-    const tailElements = [1];
-
-    inputSequence.forEach(currentElement => {
-        const negatedValue = -currentElement;
-        const insertionIndex = findInsertionPoint(tailElements, 0, tailElements.length, negatedValue);
-
-        if (insertionIndex === tailElements.length) {
-            tailElements.push(negatedValue);
-        } else {
-            tailElements[insertionIndex] = negatedValue;
-        }
-    });
-
-    return tailElements.length;
+  console.log(answer);
 }

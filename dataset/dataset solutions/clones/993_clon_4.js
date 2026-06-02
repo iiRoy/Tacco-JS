@@ -1,40 +1,78 @@
 inputData = [];
+
 var inputHandler = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-inputHandler.on('line', (currentLine) => {
+inputHandler.on('line', function(currentLine) {
   inputData.push(currentLine);
 });
 
-inputHandler.on('close', () => {
-  const countOfNumbers = Number(inputData[0]);
-  
-  const primeCount = inputData
-    .slice(1, 1 + countOfNumbers)
-    .map(Number)
-    .filter(checkPrimality)
-    .length;
-  
-  console.log(primeCount);
+inputHandler.on('close', function() {
+  const totalValues = parseInt(inputData[0]);
+
+  const valuesToCheck = inputData
+    .slice(1, 1 + totalValues)
+    .map(function(lineValue) {
+      return parseInt(lineValue);
+    });
+
+  const maximumValue = valuesToCheck.reduce(function(currentMax, value) {
+    if (Number.isFinite(value) && value > currentMax) {
+      return value;
+    }
+    return currentMax;
+  }, 0);
+
+  const primeTable = buildPrimeTable(maximumValue);
+
+  let primeCounter = 0;
+
+  valuesToCheck.forEach(function(value) {
+    if (isPrimeUsingTable(value, primeTable)) {
+      primeCounter++;
+    }
+  });
+
+  console.log(primeCounter);
 });
 
-function checkPrimality(valueToTest) {
-    if (valueToTest === 2) return true;
-    if (valueToTest < 2 || valueToTest % 2 === 0) return false;
+function buildPrimeTable(limit) {
+  const table = new Array(limit + 1).fill(true);
 
-    const divisorUpperLimit = Math.floor(Math.sqrt(valueToTest));
+  if (limit >= 0) table[0] = false;
+  if (limit >= 1) table[1] = false;
 
-    const recursiveDivisorCheck = (currentDivisor) => {
-        if (currentDivisor > divisorUpperLimit) {
-            return true;
-        }
-        if (valueToTest % currentDivisor === 0) {
-            return false;
-        }
-        return recursiveDivisorCheck(currentDivisor + 2);
-    };
-    
-    return recursiveDivisorCheck(3);
+  for (let candidate = 2; candidate * candidate <= limit; candidate++) {
+    if (table[candidate]) {
+      for (let multiple = candidate * candidate; multiple <= limit; multiple += candidate) {
+        table[multiple] = false;
+      }
+    }
+  }
+
+  return table;
+}
+
+function isPrimeUsingTable(value, primeTable) {
+  if (value === 2) {
+    return true;
+  }
+
+  if (value < 2 || value % 2 === 0) {
+    return false;
+  }
+
+  /*
+   * Preserva el comportamiento raro del original:
+   * parseInt(...) puede producir NaN.
+   * En el original, isPrime(NaN) termina devolviendo true porque
+   * Math.sqrt(NaN) hace que el for no se ejecute.
+   */
+  if (!Number.isFinite(value)) {
+    return true;
+  }
+
+  return primeTable[value] === true;
 }

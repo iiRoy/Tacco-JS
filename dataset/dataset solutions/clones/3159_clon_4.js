@@ -1,30 +1,34 @@
-function processCharacterSequence(currentSequenceState, currentRemovedPairCount) {
-    let sequenceModifiedInPass = false;
-    let workingSequence = [...currentSequenceState];
-    let passPairCount = currentRemovedPairCount;
-
-    for (let currentIdx = 0; currentIdx < workingSequence.length; currentIdx++) {
-        console.log(workingSequence);
-
-        if (workingSequence[currentIdx] === "1" && workingSequence[currentIdx + 1] === "0") {
-            passPairCount++;
-            sequenceModifiedInPass = true;
-            workingSequence.splice(currentIdx, 2);
-        } else if (workingSequence[currentIdx] === "0" && workingSequence[currentIdx + 1] === "1") {
-            passPairCount++;
-            sequenceModifiedInPass = true;
-            workingSequence.splice(currentIdx, 2);
+function revisarSecuencia(listaCaracteres, posicionActual, totalParejas, huboCambio) {
+    if (posicionActual >= listaCaracteres.length) {
+        if (huboCambio) {
+            return revisarSecuencia(listaCaracteres, 0, totalParejas, false);
         }
+
+        console.log(totalParejas * 2);
+        return;
     }
 
-    if (sequenceModifiedInPass) {
-        processCharacterSequence(workingSequence, passPairCount);
-    } else {
-        console.log(passPairCount * 2);
+    console.log(listaCaracteres);
+
+    let contadorActualizado = totalParejas;
+    let cambioActualizado = huboCambio;
+
+    if (listaCaracteres[posicionActual] === "1" && listaCaracteres[posicionActual + 1] === "0") {
+        contadorActualizado++;
+        cambioActualizado = true;
+        listaCaracteres.splice(posicionActual, 2);
     }
+
+    if (listaCaracteres[posicionActual] === "0" && listaCaracteres[posicionActual + 1] === "1") {
+        contadorActualizado++;
+        cambioActualizado = true;
+        listaCaracteres.splice(posicionActual, 2);
+    }
+
+    revisarSecuencia(listaCaracteres, posicionActual + 1, contadorActualizado, cambioActualizado);
 }
 
-const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const initialCharList = fileContent.split("");
+const contenidoEntrada = require("fs").readFileSync("/dev/stdin", "utf8");
+const caracteresEntrada = contenidoEntrada.split("");
 
-processCharacterSequence(initialCharList, 0);
+revisarSecuencia(caracteresEntrada, 0, 0, false);

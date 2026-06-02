@@ -5,6 +5,7 @@ import argparse
 import joblib
 import os
 import time
+import warnings
 import numpy as np
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -13,13 +14,21 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
+# Silence harmless scikit-learn/joblib parallel warning shown by some sklearn/Python versions.
+warnings.filterwarnings(
+    "ignore",
+    message=r"`sklearn\.utils\.parallel\.delayed` should be used with `sklearn\.utils\.parallel\.Parallel`.*",
+    category=UserWarning,
+    module=r"sklearn\.utils\.parallel",
+)
+
 # ─────────────────────────────────────────────
 #  Paths
 # ─────────────────────────────────────────────
 
-COMPARE_JS = Path("Vectorization/compare.js")
-BASE_DIR   = Path("dataset/dataset solutions/js_files")
-CLONES_DIR = Path("dataset/dataset solutions/clones")
+COMPARE_JS = Path("../Vectorization/compare.js")
+BASE_DIR   = Path("../dataset/dataset solutions/js_files")
+CLONES_DIR = Path("../dataset/dataset solutions/clones")
 
 CACHE_DIR     = Path(".cache")
 FEATURE_CACHE = CACHE_DIR / "rf_features_cache.npz"
@@ -43,25 +52,59 @@ RF_CLASS_WEIGHT      = None
 RF_OOB_SCORE         = True
 
 # ─────────────────────────────────────────────
-#  Features  (16 lexical + 12 IR + 3 NormAST + 3 CFG = 34 total)
+#  Features
+#  Opcion implementada: vector balanceado de 20 metricas.
+#  Mantiene un vector estricto de 20 metricas: lexicas, IR, NormAST y CFG.
 # ─────────────────────────────────────────────
 
 METRIC_NAMES = [
-    "Jaccard", "Dice", "LevenshteinRatio", "Jaro", "JaroWinkler",
-    "Cosine", "Overlap", "LCSRatio", "NgramJaccard", "NgramDice",
-    "GaussManhattan", "GaussEuclidean", "GaussMinkowski", "GaussChebyshev",
-    "LengthRatio", "VocabularyRatio",
-    "IR_InstrCountRatio", "IR_LabelCountRatio", "IR_BranchCountRatio",
-    "IR_JumpCountRatio", "IR_AssignCountRatio", "IR_CallCountRatio",
-    "IR_RetCountRatio", "IR_TempCountRatio", "IR_FunctionCountRatio",
-    "IR_BranchDensity_A", "IR_BranchDensity_B", "IR_BranchDensityDiff",
-    "NormASTJaccard", "NormASTLCSRatio", "NormASTCosine",
-    "CFG_NodeCountRatio", "CFG_EdgeCountRatio", "CFG_CyclomaticRatio",
+    "Jaccard",
+    "Dice",
+    "LevenshteinRatio",
+    "Cosine",
+    "LCSRatio",
+    "NgramJaccard",
+    "NgramDice",
+    "LengthRatio",
+    "VocabularyRatio",
+    "IR_InstrCountRatio",
+    "IR_BranchCountRatio",
+    "IR_CallCountRatio",
+    "IR_FunctionCountRatio",
+    "IR_BranchDensityDiff",
+    "NormASTJaccard",
+    "NormASTLCSRatio",
+    "NormASTCosine",
+    "CFG_NodeCountRatio",
+    "CFG_EdgeCountRatio",
+    "CFG_CyclomaticRatio",
 ]
 
+
+def normalize_feature_vector(feats: list[float]) -> list[float]:
+    """Require the strict 20-feature vector used by Vectorization/similarity.js."""
+    if len(feats) != len(METRIC_NAMES):
+        raise ValueError(
+            f"Expected {len(METRIC_NAMES)} selected features, got {len(feats)}. "
+            "Delete .cache/rf_features_cache.npz and rebuild the dataset."
+        )
+    return [float(value) for value in feats]
+
+
+def normalize_feature_matrix(X: np.ndarray) -> np.ndarray:
+    """Require cached matrices to match the strict 20-feature vector."""
+    if X.size == 0:
+        return X
+    if X.shape[1] != len(METRIC_NAMES):
+        raise ValueError(
+            f"Unsupported feature width {X.shape[1]}. Expected {len(METRIC_NAMES)}. "
+            "Delete .cache/rf_features_cache.npz and rebuild the dataset."
+        )
+    return X.astype(float, copy=False)
+
 # Features to exclude from training (edit this list to experiment).
-# The cache always stores all 28 features, so changing this list
-# does not require rebuilding the cache.
+# The cache is normalized to METRIC_NAMES, so changing this list does not
+# require rebuilding the cache.
 EXCLUDE_METRICS: list[str] = []
 
 
@@ -94,12 +137,8 @@ def compare_with_js(file_a: Path, file_b: Path) -> list:
         return []
 
     try:
-        feats = json.loads(result.stdout.strip())
-        if len(feats) != len(METRIC_NAMES):
-            print(f"  [WARN] Expected {len(METRIC_NAMES)} features, "
-                  f"got {len(feats)} for {file_a.name} vs {file_b.name}")
-            return []
-        return [float(f) for f in feats]
+        raw_feats = json.loads(result.stdout.strip())
+        return normalize_feature_vector(raw_feats)
     except (json.JSONDecodeError, ValueError) as e:
         print(f"  [PARSE ERROR] {file_a.name} vs {file_b.name}: {e}")
         return []
@@ -212,6 +251,8 @@ def save_cache(X, y, pair_meta, X_unseen, y_unseen, meta_unseen):
                     "test_size": TEST_SIZE,
                     "random_state": RANDOM_STATE,
                     "class_names": CLASS_NAMES,
+                    "metric_names": METRIC_NAMES,
+                    "selected_metric_count": len(METRIC_NAMES),
                 },
             },
             f, indent=2,
@@ -228,9 +269,9 @@ def load_cache():
     with open(META_CACHE, "r", encoding="utf-8") as f:
         meta = json.load(f)
 
-    X           = data["X"]
+    X           = normalize_feature_matrix(data["X"])
     y           = data["y"]
-    X_unseen    = data["X_unseen"]
+    X_unseen    = normalize_feature_matrix(data["X_unseen"])
     y_unseen    = data["y_unseen"]
     pair_meta   = [tuple(item) for item in meta["pair_meta"]]
     meta_unseen = [tuple(item) for item in meta["meta_unseen"]]
@@ -377,7 +418,8 @@ def train_and_evaluate(
     model_dir.mkdir(parents=True, exist_ok=True)
     joblib.dump(
         {"model": clf, "scaler": scaler,
-         "metric_names": METRIC_NAMES, "exclude_metrics": EXCLUDE_METRICS,
+         "metric_names": active_names,
+         "exclude_metrics": EXCLUDE_METRICS,
          "class_names": CLASS_NAMES},
         model_dir / "random_forest_model.joblib",
     )
@@ -481,7 +523,7 @@ def main():
     global TRAIN_FILE_RATIO
 
     parser = argparse.ArgumentParser(
-        description="Plagiarism detector — Random Forest, 28-feature compare.js."
+        description="Plagiarism detector — Random Forest, 20-feature selected vector."
     )
     parser.add_argument("--n-estimators",      type=int,   default=RF_N_ESTIMATORS)
     parser.add_argument("--criterion",          type=str,   default=RF_CRITERION,

@@ -1,14 +1,23 @@
-const fileSystem = require("fs");
-const sourceData = fileSystem.readFileSync("/dev/stdin", "utf8");
+const fs = require("fs");
+const source = fs.readFileSync("/dev/stdin", "utf8");
 
-const secondChar = sourceData.charAt(2);
-const fourthChar = sourceData.charAt(4);
+const positions = [0, 2, 4];
+const picked = positions.map(function (place) {
+  return source[place] * 1;
+});
 
-const combinedString = secondChar + fourthChar;
-const numericSuffix = parseInt(combinedString, 10);
+const usable = picked.every(function (part) {
+  return part === part;
+});
 
-if (numericSuffix % 4 === 0) {
-  console.log('YES');
-} else {
-  console.log('NO');
+const divisibleEndings = new Set();
+for (let ten = 0; ten < 10; ten++) {
+  for (let one = 0; one < 10; one++) {
+    if ((ten * 10 + one) % 4 === 0) {
+      divisibleEndings.add(ten + ":" + one);
+    }
+  }
 }
+
+const key = picked[1] + ":" + picked[2];
+console.log(usable && divisibleEndings.has(key) ? "YES" : "NO");

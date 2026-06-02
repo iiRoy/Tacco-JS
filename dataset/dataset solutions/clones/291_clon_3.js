@@ -5,26 +5,33 @@ function processRpnLine(expressionLineContent) {
     const expressionTokens = expressionLineContent.split(/\s/);
     const evaluationStack = [];
 
-    const binaryOperators = {
-        '+': (firstOp, secondOp) => firstOp + secondOp,
-        '-': (firstOp, secondOp) => firstOp - secondOp,
-        '*': (firstOp, secondOp) => firstOp * secondOp,
-        '/': (firstOp, secondOp) => firstOp / secondOp
+    const binaryOperators = Object.create(null);
+
+    binaryOperators['+'] = function(stackRef) {
+        stackRef.push(stackRef.pop() + stackRef.pop());
     };
 
-    for (let currentTokenValue of expressionTokens) {
-        const operatorFunction = binaryOperators[currentTokenValue];
+    binaryOperators['-'] = function(stackRef) {
+        stackRef.push(-stackRef.pop() + stackRef.pop());
+    };
 
-        if (operatorFunction) {
-            const operandB = evaluationStack.pop();
-            const operandA = evaluationStack.pop();
+    binaryOperators['*'] = function(stackRef) {
+        stackRef.push(stackRef.pop() * stackRef.pop());
+    };
 
-            const operationResult = operatorFunction(operandA, operandB);
-            evaluationStack.push(operationResult);
+    binaryOperators['/'] = function(stackRef) {
+        stackRef.push(1 / stackRef.pop() * stackRef.pop());
+    };
+
+    for (let tokenIndex = 0; tokenIndex < expressionTokens.length; tokenIndex++) {
+        const currentTokenValue = expressionTokens[tokenIndex];
+
+        if (Object.prototype.hasOwnProperty.call(binaryOperators, currentTokenValue)) {
+            binaryOperators[currentTokenValue](evaluationStack);
         } else {
-            const parsedNumericValue = parseFloat(currentTokenValue);
-            const valueToPush = isNaN(parsedNumericValue) ? 0 : parsedNumericValue;
-            evaluationStack.push(valueToPush);
+            evaluationStack.push(
+                isNaN(currentTokenValue) ? 0 : parseFloat(currentTokenValue)
+            );
         }
     }
 
@@ -32,12 +39,10 @@ function processRpnLine(expressionLineContent) {
 }
 
 const rawInputData = fileSystemModule.readFileSync(inputSourcePath, 'utf8');
-
 const inputLinesArray = rawInputData.split(/\n/);
 
 for (let currentLineIndex = 0; currentLineIndex < inputLinesArray.length; currentLineIndex++) {
     const currentExpressionString = inputLinesArray[currentLineIndex];
-
     const finalCalculatedValue = processRpnLine(currentExpressionString);
 
     console.log(finalCalculatedValue.toFixed(6));

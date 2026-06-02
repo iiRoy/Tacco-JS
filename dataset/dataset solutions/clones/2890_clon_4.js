@@ -1,14 +1,6 @@
-function processInputData(rawData) {
-    const lineSegments = rawData.split("\n");
-    const mainLine = lineSegments[0];
-
-    const relevantCharacters = Array.from(mainLine).filter(
-        (charElement) => charElement !== 'o'
-    );
-
-    const finalCount = relevantCharacters.length;
-
-    console.log(finalCount >= 8 ? "NO" : "YES");
+function run(source) {
+  const eightVisibleNonO = /^(?:o*[^o\n]){8}/;
+  process.stdout.write(eightVisibleNonO.test(source) ? "NO\n" : "YES\n");
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+run(require("fs").readFileSync("/dev/stdin", "utf8"));

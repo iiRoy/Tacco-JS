@@ -1,45 +1,44 @@
-function processSequence(inputData) {
-  const [countNodesStr, targetStepsStr] = inputData[0].trim().split(" ");
-  const countNodes = BigInt(countNodesStr);
-  const targetSteps = BigInt(targetStepsStr);
+function solve(lines) {
+  const header = lines[0].trim().split(" ");
+  const n = BigInt(header[0]);
+  const k = BigInt(header[1]);
+  const a = lines[1].trim().split(" ").map(x => parseInt(x));
 
-  const nextIndices = inputData[1].trim().split(" ").map(val => parseInt(val) - 1);
+  const available = new Set();
+  for (let i = 0; i < n; i++) {
+    available.add(i);
+    a[i]--;
+  }
 
-  const pathSequence = [];
-  const visitedStepMap = new Map();
+  const firstArrival = new Map();
+  const route = [0];
 
-  let currentPosition = 0;
-  let currentStep = 0;
-  let cycleEntryStep = -1;
-  let cycleLengthVal = -1;
+  let cursor = 0;
+  let step = 0;
+  let repeated;
 
-  while (true) {
-    if (visitedStepMap.has(currentPosition)) {
-      cycleEntryStep = visitedStepMap.get(currentPosition);
-      cycleLengthVal = currentStep - cycleEntryStep;
+  for (;;) {
+    const landing = a[cursor];
+    if (available.has(landing) && !firstArrival.has(landing)) {
+      firstArrival.set(landing, step);
+      route.push(landing);
+      cursor = landing;
+      step++;
+    } else {
+      repeated = landing;
       break;
     }
-
-    visitedStepMap.set(currentPosition, currentStep);
-    pathSequence.push(currentPosition);
-
-    currentPosition = nextIndices[currentPosition];
-    currentStep++;
   }
 
-  let finalEffectiveStep;
+  const start = BigInt(firstArrival.get(repeated));
+  const period = BigInt(step - firstArrival.get(repeated));
 
-  if (targetSteps < BigInt(cycleEntryStep)) {
-    finalEffectiveStep = targetSteps;
-  } else {
-    const stepsBeyondCycleEntry = targetSteps - BigInt(cycleEntryStep);
-    const effectiveStepsWithinCycle = stepsBeyondCycleEntry % BigInt(cycleLengthVal);
-    finalEffectiveStep = BigInt(cycleEntryStep) + effectiveStepsWithinCycle;
-  }
+  const compressed = (k - start < 0n)
+    ? k
+    : ((k - start) % period) + start;
 
-  const finalNode = pathSequence[Number(finalEffectiveStep)];
-
-  console.log((finalNode + 1) + "");
+  const node = route[Number(compressed)];
+  console.log((node + 1) + "");
 }
 
-processSequence(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+solve(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

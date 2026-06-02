@@ -1,65 +1,47 @@
 'use strict';
 
-function createInputProcessor() {
-    let receivedDataBuffer = '';
-    let currentLineIndex = 0;
-    let cachedProcessedLines = [];
-
-    process.stdin.on('data', dataChunk => {
-        receivedDataBuffer += dataChunk;
-    });
-
-    return new Promise(completionHandler => {
-        process.stdin.on('end', () => {
-            cachedProcessedLines = receivedDataBuffer.trim().split('\n').map(lineContent => lineContent.trim());
-            completionHandler({
-                retrieveNextInputLine: () => cachedProcessedLines[currentLineIndex++],
-                parseLineToNumberArray: (textLine) => textLine.split(' ').map(Number),
-                parseLineToSingleNumber: (textLine) => Number(textLine)
-            });
-        });
-    });
-}
-
-function calculateMinimumFrogCost(inputAccessor) {
-    const problemParameters = inputAccessor.parseLineToNumberArray(inputAccessor.retrieveNextInputLine());
-    const totalSequenceLength = problemParameters[0];
-    const maximumAllowedJump = problemParameters[1];
-    const heightValues = inputAccessor.parseLineToNumberArray(inputAccessor.retrieveNextInputLine());
-
-    const costCache = new Map();
-
-    function determinePathCost(targetIndex) {
-        if (targetIndex === 0) {
-            return 0;
-        }
-        if (targetIndex === 1) {
-            return Math.abs(heightValues[1] - heightValues[0]);
-        }
-        if (costCache.has(targetIndex)) {
-            return costCache.get(targetIndex);
-        }
-
-        let lowestAchievableCost = Infinity;
-
-        for (let backwardStep = 1; backwardStep <= maximumAllowedJump; backwardStep++) {
-            const sourceIndex = targetIndex - backwardStep;
-            if (sourceIndex >= 0) {
-                const costFromSource = determinePathCost(sourceIndex) + Math.abs(heightValues[targetIndex] - heightValues[sourceIndex]);
-                lowestAchievableCost = Math.min(lowestAchievableCost, costFromSource);
-            }
-        }
-
-        costCache.set(targetIndex, lowestAchievableCost);
-        return lowestAchievableCost;
-    }
-
-    console.log(determinePathCost(totalSequenceLength - 1));
-}
-
 process.stdin.resume();
 process.stdin.setEncoding('utf-8');
 
-createInputProcessor().then(processorInstance => {
-    calculateMinimumFrogCost(processorInstance);
+let sourceText = '';
+let pointer = 0;
+
+process.stdin.on('data', part => {
+    sourceText += part;
+});
+
+process.stdin.on('end', () => {
+    const rows = sourceText.trim().split('\n').map(row => row.trim());
+
+    function nextRow() {
+        return rows[pointer++];
+    }
+
+    function numbersFromLine(line) {
+        return line.split(' ').map(value => Number(value));
+    }
+
+    const settings = numbersFromLine(nextRow());
+    const stoneCount = settings[0];
+    const jumpLimit = settings[1];
+    const heights = numbersFromLine(nextRow());
+
+    const bestKnown = new Array(stoneCount);
+    bestKnown.fill(100);
+    bestKnown[0] = 0;
+    bestKnown[1] = Math.abs(heights[1] - heights[0]);
+
+    for (let origin = 0; origin < stoneCount; origin++) {
+        const farthest = Math.min(stoneCount - 1, origin + jumpLimit);
+        const firstDestination = Math.max(2, origin + 1);
+
+        for (let destination = firstDestination; destination <= farthest; destination++) {
+            const offered = bestKnown[origin] + Math.abs(heights[destination] - heights[origin]);
+            if (offered < bestKnown[destination]) {
+                bestKnown[destination] = offered;
+            }
+        }
+    }
+
+    console.log(bestKnown[stoneCount - 1]);
 });

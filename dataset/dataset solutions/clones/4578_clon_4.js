@@ -1,20 +1,31 @@
 "use strict";
 
-const processInput = (inputTxt) => {
-    const inputLines = inputTxt.split("\n");
-    const [nodeQuantity, connectionQuantity] = inputLines[0].split(" ").map(Number);
+function main(input) {
+    const rows = input.split("\n");
+    const header = rows[0].split(" ");
+    const N = parseInt(header[0]);
+    const M = parseInt(header[1]);
 
-    const nodeFrequencies = new Array(nodeQuantity + 1).fill(0);
+    const counts = new Array(10).fill(0);
+    const chosenRows = rows.slice(1, M + 1);
 
-    inputLines.slice(1, connectionQuantity + 1).forEach(connectionLine => {
-        const [firstEndpoint, secondEndpoint] = connectionLine.split(" ").map(Number);
-        nodeFrequencies[firstEndpoint]++;
-        nodeFrequencies[secondEndpoint]++;
-    });
+    for (const row of chosenRows) {
+        for (let index = 0; index < row.length; index++) {
+            const ch = row[index];
+            if (ch === " ") {
+                continue;
+            }
 
-    for (let currentId = 1; currentId <= nodeQuantity; currentId++) {
-        console.log(nodeFrequencies[currentId]);
+            const value = Number(ch);
+            if (Number.isInteger(value) && value >= 1 && value <= 9) {
+                counts[value]++;
+            }
+        }
     }
-};
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    for (let current = 1; current <= N; current++) {
+        console.log(current < counts.length ? counts[current] : 0);
+    }
+}
+
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

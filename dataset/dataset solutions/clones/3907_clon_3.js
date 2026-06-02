@@ -1,53 +1,110 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let inputAccumulator = '';
+var accumulatedInput = '';
 
-process.stdin.on('data', (dataChunk) => {
-    inputAccumulator += dataChunk;
+process.stdin.on('data', function(chunk) {
+  accumulatedInput += chunk;
 });
 
-process.stdin.on('end', () => {
-    const rawInputLines = inputAccumulator.split('\n');
+process.stdin.on('end', function() {
+  runProgram(accumulatedInput);
+});
 
-    const parseInputData = (linesArray) => {
-        const totalElementsCount = Number(linesArray[0]);
-        const elementsAsString = linesArray[1].split(' ');
-        const numericElements = elementsAsString.map(Number);
+function splitRawInput(rawInput) {
+  return rawInput.split('\n');
+}
 
-        return { totalElementsCount, numericElements };
-    };
+function readOriginalCount(lines) {
+  return lines[0];
+}
 
-    const { totalElementsCount, numericElements } = parseInputData(rawInputLines);
+function readOriginalNumberList(lines, countValue) {
+  var rawValues = lines[1].split(' ');
+  var parsedValues = [];
 
-    const sortedNumericElements = [...numericElements].sort((a, b) => a - b);
+  for (var index = 0; index < countValue; index++) {
+    parsedValues.push(parseInt(rawValues[index]));
+  }
 
-    const sortedValueToIndicesMap = new Map();
-    sortedNumericElements.forEach((val, idx) => {
-        if (!sortedValueToIndicesMap.has(val)) {
-            sortedValueToIndicesMap.set(val, []);
-        }
-        sortedValueToIndicesMap.get(val).push(idx);
-    });
+  return parsedValues;
+}
 
-    const N = totalElementsCount;
-    const effectiveLengthForMedian = N - 1;
+function createSortedCopyWithOriginalBug(values) {
+  var copiedValues = values.slice();
 
-    const medianLowerBoundIdx = Math.floor(effectiveLengthForMedian / 2);
-    const lowerMedianCandidate = sortedNumericElements[medianLowerBoundIdx];
-    const upperMedianCandidate = sortedNumericElements[medianLowerBoundIdx + 1];
+  /*
+   * Fiel al original:
+   * sort() sin comparator ordena lexicográficamente,
+   * no numéricamente.
+   */
+  copiedValues.sort();
 
-    for (let k = 0; k < N; k++) {
-        const currentOriginalNumber = numericElements[k];
+  return copiedValues;
+}
 
-        const sortedPositionOfCurrent = sortedValueToIndicesMap.get(currentOriginalNumber).pop();
+function buildSortedPositionDictionary(originalValues, sortedValues) {
+  var positionDictionary = {};
 
-        let outputValue;
-        if (sortedPositionOfCurrent <= medianLowerBoundIdx) {
-            outputValue = upperMedianCandidate;
-        } else {
-            outputValue = lowerMedianCandidate;
-        }
-        console.log(String(outputValue));
+  for (var index in originalValues) {
+    var sortedValueAtIndex = sortedValues[index];
+
+    if (sortedValueAtIndex in positionDictionary) {
+      positionDictionary[sortedValueAtIndex].push(index);
+    } else {
+      positionDictionary[sortedValueAtIndex] = [index];
     }
-});
+  }
+
+  return positionDictionary;
+}
+
+function getSortedPositionForOriginalValue(value, dictionary) {
+  return dictionary[value.toString()].pop();
+}
+
+function chooseMedianReplacement(sortedIndex, halfIndex, leftCandidate, rightCandidate) {
+  if (sortedIndex <= halfIndex) {
+    return rightCandidate;
+  }
+
+  return leftCandidate;
+}
+
+function printAnswersForEveryElement(values, sortedValues, dictionary, originalCount) {
+  var lastIndex = originalCount - 1;
+
+  for (var index = 0; index <= lastIndex; index++) {
+    var currentValue = values[index];
+
+    var sortedPosition = getSortedPositionForOriginalValue(
+      currentValue,
+      dictionary
+    );
+
+    var halfIndex = Math.floor(lastIndex / 2);
+    var leftCandidate = sortedValues[halfIndex];
+    var rightCandidate = sortedValues[halfIndex + 1];
+
+    var answer = chooseMedianReplacement(
+      sortedPosition,
+      halfIndex,
+      leftCandidate,
+      rightCandidate
+    );
+
+    console.log(answer.toString());
+  }
+}
+
+function runProgram(rawInput) {
+  var lines = splitRawInput(rawInput);
+
+  var n = readOriginalCount(lines);
+  var list = readOriginalNumberList(lines, n);
+
+  var sortedList = createSortedCopyWithOriginalBug(list);
+  var dictionary = buildSortedPositionDictionary(list, sortedList);
+
+  printAnswersForEveryElement(list, sortedList, dictionary, n);
+}

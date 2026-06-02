@@ -1,46 +1,64 @@
 "use strict";
 
-function ProcessInput(inputData) {
-    const inputLines = inputData.split("\n");
+function solve(data) {
+    const rows = data.split("\n");
+    const LIMIT = 101010;
+    const memo = new Map();
 
-    const UPPER_LIMIT = 101010;
-    const primeStatusTracker = new Uint8Array(UPPER_LIMIT).fill(1);
-    primeStatusTracker[0] = primeStatusTracker[1] = 0;
-
-    for (let currentCandidate = 2; currentCandidate * currentCandidate < UPPER_LIMIT; ++currentCandidate) {
-        if (primeStatusTracker[currentCandidate]) {
-            for (let multipleIndex = currentCandidate * currentCandidate; multipleIndex < UPPER_LIMIT; multipleIndex += currentCandidate) {
-                primeStatusTracker[multipleIndex] = 0;
+    function prime(n) {
+        if (memo.has(n)) return memo.get(n);
+        let ok = true;
+        if (n < 2) {
+            ok = false;
+        } else if (n !== 2 && n % 2 === 0) {
+            ok = false;
+        } else {
+            let d = 3;
+            while (d * d <= n) {
+                if (n % d === 0) {
+                    ok = false;
+                    break;
+                }
+                d += 2;
             }
         }
+        memo.set(n, ok);
+        return ok;
     }
 
-    const primeNumberSet = new Set();
-    for (let numberValue = 2; numberValue < UPPER_LIMIT; ++numberValue) {
-        if (primeStatusTracker[numberValue]) {
-            primeNumberSet.add(numberValue);
+    const liked = [];
+    let value = 1;
+    while (value < LIMIT) {
+        if (prime(value) && prime((value + 1) / 2)) liked.push(value);
+        value += 2;
+    }
+
+    function firstNotLess(x) {
+        let left = 0;
+        let right = liked.length;
+        while (left < right) {
+            const mid = (left + right) >> 1;
+            if (liked[mid] < x) left = mid + 1;
+            else right = mid;
         }
+        return left;
     }
 
-    const isTargetLike = Array.from({ length: UPPER_LIMIT }, (_, indexPosition) => {
-        if (indexPosition % 2 === 0) return 0;
-        const halfPlusOneValue = (indexPosition + 1) / 2;
-        return (primeNumberSet.has(indexPosition) && primeNumberSet.has(halfPlusOneValue)) ? 1 : 0;
-    });
+    let queries = rows.shift().trim().split(/\s/)[0] - 0;
+    for (let idx = 0; idx < queries; ++idx) {
+        const pair = rows.shift().split(/\s/).map((part) => part - 0);
+        const low = pair[0];
+        let high = pair[1];
+        ++high;
 
-    const cumulativeSummation = isTargetLike.reduce((accumulatorArray, currentValue, currentIdx) => {
-        accumulatorArray[currentIdx + 1] = accumulatorArray[currentIdx] + currentValue;
-        return accumulatorArray;
-    }, new Array(UPPER_LIMIT + 1).fill(0));
-
-    const queryCountString = inputLines[0].trim().split(/\s/)[0];
-    const totalQueryOperations = Number(queryCountString);
-
-    inputLines.slice(1, 1 + totalQueryOperations).forEach((singleQueryLine) => {
-        const [lowerBound, upperBound] = singleQueryLine.split(/\s/).map(Number);
-        const queryResult = cumulativeSummation[upperBound + 1] - cumulativeSummation[lowerBound];
-        console.log(queryResult);
-    });
+        let answer;
+        if (Number.isInteger(low) && Number.isInteger(high) && low >= 0 && high >= 0 && low <= LIMIT && high <= LIMIT) {
+            answer = firstNotLess(high) - firstNotLess(low);
+        } else {
+            answer = NaN;
+        }
+        console.log(answer);
+    }
 }
 
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+solve(require("fs").readFileSync("/dev/stdin", "utf8"));

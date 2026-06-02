@@ -1,90 +1,32 @@
-function ProcessGraphData(inputLines) {
-  // Split the input string into an array of lines
-  let parsedLines = inputLines.split("\n");
-
-  // Parse the first line to get graph dimensions
-  const graphDimensions = parsedLines[0].split(" ").map((val) => +val);
-  let numNodes = graphDimensions[0]; // Number of vertices in the graph
-  const numEdges = graphDimensions[1]; // Number of edges in the graph
-
-  // Initialize an adjacency matrix for the graph
-  // All entries are initially zero, indicating no direct connection
-  const adjMatrix = Array(numNodes)
-    .fill(0)
-    .map(() => Array(numNodes).fill(0));
-
-  // Populate the adjacency matrix based on the provided edges
-  // Edges are 1-indexed in input, convert to 0-indexed
-  for (let edgeIndex = 0; edgeIndex < numEdges; edgeIndex++) {
-    const edgeNodes = parsedLines[edgeIndex + 1].split(" ").map((val) => +val - 1);
-    const nodeA = edgeNodes[0];
-    const nodeB = edgeNodes[1];
-    // Mark connection for undirected graph
-    adjMatrix[nodeA][nodeB] = 1;
-    adjMatrix[nodeB][nodeA] = 1;
+function Solve(src){
+  src = src.split("\n");
+  var size = src[0].split(" ").map(v=>+v);
+  var edge = size[1];
+  size = size[0];
+  var table = Array(size).fill(0).map(v=>Array(size).fill(0));
+  for(var p = 0; p < edge; p++){
+    var pair = src[p+1].split(" ").map(v=>v-1);
+    table[pair[0]][pair[1]] = table[pair[1]][pair[0]] = 1;
   }
-
-  // Find the node with the minimum degree
-  let minDegreeVal = 9e9; // Initialize with a very large number
-  let minDegreeNode = -1; // Store the index of the node with minimum degree
-
-  for (let nodeIdx = 0; nodeIdx < numNodes; nodeIdx++) {
-    // Calculate the degree of the current node (sum of its row in adjMatrix)
-    const currentNodeDegree = adjMatrix[nodeIdx].reduce((sum, val) => sum + val, 0);
-    if (minDegreeVal > currentNodeDegree) {
-      minDegreeVal = currentNodeDegree;
-      minDegreeNode = nodeIdx;
-    }
+  var low = 9e9;
+  var pos;
+  for(p = 0; p < size; p++){
+    var sum = table[p].reduce((v,w)=>v+w);
+    if(low > sum){low = sum; pos = p;}
   }
-
-  // Separate other nodes into two groups: neighbors of minDegreeNode and non-neighbors
-  const neighborsOfMin = [];
-  const nonNeighborsOfMin = [];
-
-  for (let otherNodeIdx = 0; otherNodeIdx < numNodes; otherNodeIdx++) {
-    if (otherNodeIdx === minDegreeNode) {
-      continue; // Skip the minDegreeNode itself
-    }
-    if (adjMatrix[minDegreeNode][otherNodeIdx]) {
-      neighborsOfMin.push(otherNodeIdx); // It's a neighbor
-    } else {
-      nonNeighborsOfMin.push(otherNodeIdx); // It's not a neighbor
-    }
+  var left=[], right=[];
+  for(p = 0; p < size; p++){
+    if(p === pos)continue;
+    if(table[pos][p])left.push(p); else right.push(p);
   }
-
-  // Check if the neighbors of minDegreeNode form a clique
-  // If any two neighbors are not connected, it's not a valid graph structure
-  for (let outerIdx = 0; outerIdx < neighborsOfMin.length; outerIdx++) {
-    for (let innerIdx = outerIdx + 1; innerIdx < neighborsOfMin.length; innerIdx++) {
-      const node1 = neighborsOfMin[outerIdx];
-      const node2 = neighborsOfMin[innerIdx];
-      if (!adjMatrix[node1][node2]) {
-        console.log(-1); // Output -1 and exit if not a clique
-        return;
-      }
-    }
+  for(p = 0; p < left.length; p++)
+  for(var q = p + 1; q < left.length; q++){
+    if(!table[left[p]][left[q]]){console.log(-1);return;}
   }
-
-  // Check if the non-neighbors of minDegreeNode form a clique
-  // Similar check for the second group of nodes
-  for (let outerIdx = 0; outerIdx < nonNeighborsOfMin.length; outerIdx++) {
-    for (let innerIdx = outerIdx + 1; innerIdx < nonNeighborsOfMin.length; innerIdx++) {
-      const node1 = nonNeighborsOfMin[outerIdx];
-      const node2 = nonNeighborsOfMin[innerIdx];
-      if (!adjMatrix[node1][node2]) {
-        console.log(-1); // Output -1 and exit if not a clique
-        return;
-      }
-    }
+  for(p = 0; p < right.length; p++)
+  for(q = p + 1; q < right.length; q++){
+    if(!table[right[p]][right[q]]){console.log(-1);return;}
   }
-
-  // If both groups form cliques, calculate and print the result
-  // The formula represents the sum of edges within two cliques
-  // (k * (k+1) / 2) for the first clique (neighbors + minDegreeNode)
-  // ((n-k-1) * (n-k-2) / 2) for the second clique (non-neighbors)
-  const result = (minDegreeVal * (minDegreeVal + 1)) / 2 + ((numNodes - minDegreeVal - 1) * (numNodes - minDegreeVal - 2)) / 2;
-  console.log(result);
+  console.log(low*(low+1)/2+(size-low-1)*(size-low-2)/2);
 }
-
-// Read input from standard input and pass it to the main processing function
-ProcessGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Solve(require("fs").readFileSync("/dev/stdin","utf8"));

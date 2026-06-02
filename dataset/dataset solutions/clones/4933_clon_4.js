@@ -1,52 +1,55 @@
 process.stdin.resume();
-process.stdin.setEncoding('utf8');
+process.stdin.setEncoding("utf8");
 
-var inputBuffer = [];
-var inputHandler = require('readline').createInterface({
+var lines = [];
+var reader = require("readline").createInterface({
   input: process.stdin,
   output: process.stdout
 });
-inputHandler.on('line', (currentLine) => {
-  inputBuffer.push(currentLine);
+
+reader.on("line", function (line) {
+  lines.push(line);
 });
-inputHandler.on('close', () => {
-    const [limitN, limitA, limitB] = inputBuffer[0].split(" ").map(val => Number(val));
-    const charSequence = inputBuffer[1].split("");
 
-    const initialProcessingState = {
-        totalAcceptedCount: 0,
-        bAcceptedCount: 0,
-        outcomeList: []
-    };
+reader.on("close", function () {
+  const config = lines[0].split(" ").map(function (v) {
+    return v - 0;
+  });
 
-    const processItem = (accumulator, currentItem) => {
-        let nextTotalAcceptedCount = accumulator.totalAcceptedCount;
-        let nextBAcceptedCount = accumulator.bAcceptedCount;
-        let decisionResult = "No";
+  const N = config[0];
+  const A = config[1];
+  const B = config[2];
 
-        const canAcceptOverall = accumulator.totalAcceptedCount < limitA + limitB;
+  const applicants = lines[1].split("");
 
-        if (canAcceptOverall) {
-            if (currentItem === "a") {
-                nextTotalAcceptedCount++;
-                decisionResult = "Yes";
-            } else if (currentItem === "b") {
-                const canAcceptSpecificB = accumulator.bAcceptedCount < limitB;
-                if (canAcceptSpecificB) {
-                    nextTotalAcceptedCount++;
-                    nextBAcceptedCount++;
-                    decisionResult = "Yes";
-                }
-            }
-        }
+  const totalCapacity = A + B;
 
-        return {
-            totalAcceptedCount: nextTotalAcceptedCount,
-            bAcceptedCount: nextBAcceptedCount,
-            outcomeList: [...accumulator.outcomeList, decisionResult]
-        };
-    };
+  const domesticPositions = [];
+  const overseasPositions = [];
 
-    const finalProcessingState = charSequence.reduce(processItem, initialProcessingState);
-    console.log(finalProcessingState.outcomeList.join("\n"));
+  for (let index = 0; index < applicants.length; index++) {
+    if (applicants[index] === "a") {
+      domesticPositions.push(index);
+    } else if (applicants[index] === "b" && overseasPositions.length < B) {
+      overseasPositions.push(index);
+    }
+  }
+
+  const candidatePositions = domesticPositions
+    .concat(overseasPositions)
+    .sort(function (left, right) {
+      return left - right;
+    });
+
+  const acceptedIndexSet = new Set(
+    candidatePositions.slice(0, totalCapacity)
+  );
+
+  const output = [];
+
+  for (let index = 0; index < applicants.length; index++) {
+    output.push(acceptedIndexSet.has(index) ? "Yes" : "No");
+  }
+
+  console.log(output.join("\n"));
 });

@@ -1,26 +1,20 @@
-function extractInputComponents(rawInputText) {
-  const processedLines = rawInputText.trim().split('\n');
-  const numericalLength = parseInt(processedLines[0], 10);
-  const targetContent = processedLines[1];
-  return { lengthValue: numericalLength, contentString: targetContent };
-}
-
-function processStringEquality(fullInputData) {
-  const { lengthValue: currentLength, contentString: sourceString } = extractInputComponents(fullInputData);
-
-  if (currentLength % 2 !== 0) {
-    console.log('No');
-    return;
+function solveCase(total, text) {
+  var oddCheck = total % 2;
+  if (oddCheck !== 0) {
+    console.log("No")
   }
 
-  const midIndex = currentLength / 2;
+  var firstLimit = total / 2;
+  a = text.slice(0, firstLimit)
 
-  const segmentA = sourceString.substring(0, midIndex);
-  const segmentB = sourceString.substring(midIndex, currentLength);
+  var secondStart = total / 2;
+  b = text.slice(secondStart, total)
 
-  if (segmentA === segmentB) {
-    console.log('Yes');
+  var piecesMatch = a == b;
+  if (piecesMatch) {
+    console.log("Yes")
   }
 }
 
-processStringEquality(require('fs').readFileSync('/dev/stdin', 'utf8'));
+var inputData = require("fs").readFileSync("/dev/stdin", "utf8");
+solveCase(inputData);

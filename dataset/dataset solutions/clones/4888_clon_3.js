@@ -13,14 +13,13 @@ function processInput(rawData) {
 
     const dataArray = parseSpaceSeparatedNumbers(inputLines[1]);
 
-    if (itemCount === 1) {
-        console.log("0");
-        return;
-    }
-
     let maxProfit = 0;
     let profitOccurrences = 0;
     let currentMin = dataArray[0];
+
+    if (itemCount === 1) {
+        console.log("0");
+    }
 
     for (let dataIndex = 0; dataIndex < itemCount; ++dataIndex) {
         const currentValue = dataArray[dataIndex];
@@ -32,7 +31,7 @@ function processInput(rawData) {
         } else if (calculatedProfit === maxProfit && maxProfit !== 0) {
             profitOccurrences++;
         }
-        
+
         currentMin = Math.min(currentMin, currentValue);
     }
 

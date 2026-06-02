@@ -1,33 +1,16 @@
-const fileSystem = require('fs');
+const fs = require("fs");
 
-const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const [K, A, B] = fs.readFileSync("/dev/stdin", "utf8").trim().split(/\s+/).map(Number);
 
-const numericTokens = rawInputData.split(' ');
+const simpleGrowthIsBest = (B - A <= 2) || (K <= A);
 
-const firstValue = Number(numericTokens[0]);
+if (simpleGrowthIsBest) {
+    console.log(K + 1);
+} else {
+    const movesAfterReachingA = K - (A - 1);
+    const exchangeCount = Math.floor(movesAfterReachingA / 2);
+    const leftoverMove = movesAfterReachingA % 2;
 
-const secondValue = Number(numericTokens[1]);
-
-const thirdValue = Number(numericTokens[2]);
-
-const calculateFinalOutcome = (inputK, inputA, inputB) => {
-    const evaluationRules = [
-        (kVal, aVal, bVal) => (kVal < aVal + 1) ? kVal + 1 : undefined,
-        (kVal, aVal, bVal) => (bVal <= aVal + 2) ? kVal + 1 : undefined,
-        (kVal, aVal, bVal) => {
-            const termForK = kVal - aVal + 1;
-            return (termForK % 2 === 0) ? aVal + (bVal - aVal) * termForK / 2 : undefined;
-        },
-        (kVal, aVal, bVal) => aVal + (bVal - aVal) * (kVal - aVal) / 2 + 1
-    ];
-
-    for (const ruleProcessor of evaluationRules) {
-        const computedResult = ruleProcessor(inputK, inputA, inputB);
-        if (computedResult !== undefined) {
-            return computedResult;
-        }
-    }
-    return 0;
-};
-
-console.log(calculateFinalOutcome(firstValue, secondValue, thirdValue));
+    const result = A + exchangeCount * (B - A) + leftoverMove;
+    console.log(result);
+}
