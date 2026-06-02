@@ -1,35 +1,71 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { tokenizeFile } from "../Tokenizer/Tokenizer-Tokenizr.js";
+import { tokenizeFile, buildAST, normalizeAST } from "../Tokenizer/Tokenizer-Parser.js";
+import { buildIRFromFile, extractIRFeatures, IR_FEATURE_NAMES,
+         extractCFGFeatures, CFG_FEATURE_NAMES } from "../Tokenizer/ir.js";
 
 /*
   ============================================================
   CONFIGURACION PRINCIPAL
   ============================================================
+
+  DATASET_ROOT debe ser la carpeta que contiene directamente:
+  - js_files/
+  - clones/
+
+  Ejemplo:
+  /home/rodrigo/Documentos/Github/Tacco-JS/dataset/dataset general
 */
 
 const DATASET_ROOT = "./dataset/dataset general";
 
+/*
+  BASE_CODE_ID:
+    Codigo base ubicado en js_files.
+
+  CLONE_CODE_ID:
+    Codigo al que pertenecen los clones ubicados en clones.
+
+  Ejemplo:
+    BASE_CODE_ID = 2
+    CLONE_CODE_ID = 3
+
+  Compara:
+    js_files/2.js
+    contra:
+    clones/3_clon_1.js
+    clones/3_clon_2.js
+    clones/3_clon_3.js
+    clones/3_clon_4.js
+*/
+
 const BASE_CODE_ID = 1;
 const CLONE_CODE_ID = 1;
+
+/*
+  Tipos de clones a comparar.
+*/
 
 const CLONE_TYPES = [1, 2, 3, 4];
 
 /*
-  MODE:
-  - "type": compara solo tipos de nodo AST
-  - "value": compara solo valores normalizados
-  - "type-value": compara tipo + valor normalizado
-
-  Recomendado:
-  - "type-value"
+  mode:
+  - "type": compara tipos de token
+  - "value": compara valores reales de token
+  - "type-value": compara tipo y valor
 */
 
-const MODE = "type-value";
-const VECTORIZE_MODE = 3;
+const MODE = "type";
+const VECTORIZE_MODE = 1;
 
-const NGRAM_SIZE = 5;
+/*
+  Parametros de modelos.
+*/
+
+const NGRAM_SIZE = 2;
+const MINKOWSKI_P = 3;
+const SIGMA = "auto";
 
 /*
   ============================================================
@@ -83,11 +119,11 @@ function buildCloneCodePath(datasetRoot, cloneCodeId, cloneType) {
 
 /*
   ============================================================
-  TOKENIZACION BASADA EN PARSER
+  TOKENIZACION
   ============================================================
 */
 
-function tokenKey(token, mode = "type-value") {
+function tokenKey(token, mode = "type") {
   if (mode === "type") {
     return String(token.type ?? "");
   }
@@ -103,7 +139,7 @@ function tokenKey(token, mode = "type-value") {
   throw new Error(`Modo invalido: ${mode}`);
 }
 
-function tokenizeAsSequence(filePath, mode = "type-value") {
+function tokenizeAsSequence(filePath, mode = "type") {
   return tokenizeFile(filePath).map((token) => tokenKey(token, mode));
 }
 
@@ -146,12 +182,23 @@ function vectorKeys(mapA, mapB) {
   return Array.from(new Set([...mapA.keys(), ...mapB.keys()]));
 }
 
+function binaryVectorsFromSets(setA, setB) {
+  const vocabulary = Array.from(new Set([...setA, ...setB]));
+
+  return {
+    vocabulary,
+    vectorA: vocabulary.map((token) => (setA.has(token) ? 1 : 0)),
+    vectorB: vocabulary.map((token) => (setB.has(token) ? 1 : 0)),
+  };
+}
+
 /*
   ============================================================
-  JACCARD SIMILARITY
+  MODELOS DE SIMILITUD
   ============================================================
 */
 
+//JACCARD SIMILARITY
 function jaccardSimilarity(setA, setB) {
   const unionSize = new Set([...setA, ...setB]).size;
 
@@ -162,12 +209,7 @@ function jaccardSimilarity(setA, setB) {
   return intersectionSize(setA, setB) / unionSize;
 }
 
-/*
-  ============================================================
-  DICE SIMILARITY
-  ============================================================
-*/
-
+//DICE SIMILARITY
 function diceSimilarity(setA, setB) {
   const totalSize = setA.size + setB.size;
 
@@ -178,12 +220,52 @@ function diceSimilarity(setA, setB) {
   return (2 * intersectionSize(setA, setB)) / totalSize;
 }
 
-/*
-  ============================================================
-  LEVENSHTEIN DISTANCE / RATIO
-  ============================================================
-*/
+//OVERLAP COEFFICIENT
+function overlapCoefficient(setA, setB) {
+  const minSize = Math.min(setA.size, setB.size);
 
+  if (minSize === 0) {
+    return setA.size === setB.size ? 1 : 0;
+  }
+
+  return intersectionSize(setA, setB) / minSize;
+}
+
+//COSINE SIMILARITY
+function cosineSimilarity(sequenceA, sequenceB) {
+  const freqA = frequencyMap(sequenceA);
+  const freqB = frequencyMap(sequenceB);
+  const keys = vectorKeys(freqA, freqB);
+
+  if (keys.length === 0) {
+    return 1;
+  }
+
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (const key of keys) {
+    const a = freqA.get(key) ?? 0;
+    const b = freqB.get(key) ?? 0;
+
+    dot += a * b;
+    normA += a * a;
+    normB += b * b;
+  }
+
+  if (normA === 0 && normB === 0) {
+    return 1;
+  }
+
+  if (normA === 0 || normB === 0) {
+    return 0;
+  }
+
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+//LEVENSHTEIN DISTANCE
 function levenshteinDistance(sequenceA, sequenceB, substitutionCost = 1) {
   const lenA = sequenceA.length;
   const lenB = sequenceB.length;
@@ -206,9 +288,9 @@ function levenshteinDistance(sequenceA, sequenceB, substitutionCost = 1) {
       const cost = sequenceA[i - 1] === sequenceB[j - 1] ? 0 : substitutionCost;
 
       current[j] = Math.min(
-        previous[j] + 1, // eliminar
-        current[j - 1] + 1, // insertar
-        previous[j - 1] + cost, // sustituir o mantener
+        previous[j] + 1, //eliminar
+        current[j - 1] + 1, //insertar
+        previous[j - 1] + cost, // mantener o sustituir
       );
     }
 
@@ -218,24 +300,130 @@ function levenshteinDistance(sequenceA, sequenceB, substitutionCost = 1) {
   return previous[lenB];
 }
 
+//LEVENSHTEIN RATIO
 function levenshteinRatio(sequenceA, sequenceB) {
-  const maxLength = Math.max(sequenceA.length, sequenceB.length);
+  const totalLength = sequenceA.length + sequenceB.length;
 
-  if (maxLength === 0) {
+  if (totalLength === 0) {
     return 1;
   }
 
   const distance = levenshteinDistance(sequenceA, sequenceB);
 
-  return Math.max(0, 1 - distance / maxLength);
+  return Math.max(0, (totalLength - distance) / totalLength);
 }
 
-/*
-  ============================================================
-  LCS DISTANCE / RATIO
-  ============================================================
-*/
+//JARO SIMILARITY
+function jaroSimilarity(sequenceA, sequenceB) {
+  const lenA = sequenceA.length;
+  const lenB = sequenceB.length;
 
+  if (lenA === 0 && lenB === 0) {
+    return 1;
+  }
+
+  if (lenA === 0 || lenB === 0) {
+    return 0;
+  }
+
+  if (
+    lenA === lenB &&
+    sequenceA.every((value, index) => value === sequenceB[index])
+  ) {
+    return 1;
+  }
+
+  const matchDistance = Math.max(Math.floor(Math.max(lenA, lenB) / 2) - 1, 0);
+
+  const matchedA = new Array(lenA).fill(false);
+  const matchedB = new Array(lenB).fill(false);
+
+  let matches = 0;
+
+  for (let i = 0; i < lenA; i += 1) {
+    const start = Math.max(0, i - matchDistance);
+    const end = Math.min(i + matchDistance + 1, lenB);
+
+    for (let j = start; j < end; j += 1) {
+      if (matchedB[j]) {
+        continue;
+      }
+
+      if (sequenceA[i] !== sequenceB[j]) {
+        continue;
+      }
+
+      matchedA[i] = true;
+      matchedB[j] = true;
+      matches += 1;
+      break;
+    }
+  }
+
+  if (matches === 0) {
+    return 0;
+  }
+
+  const matchedSequenceA = [];
+  const matchedSequenceB = [];
+
+  for (let i = 0; i < lenA; i += 1) {
+    if (matchedA[i]) {
+      matchedSequenceA.push(sequenceA[i]);
+    }
+  }
+
+  for (let j = 0; j < lenB; j += 1) {
+    if (matchedB[j]) {
+      matchedSequenceB.push(sequenceB[j]);
+    }
+  }
+
+  let transpositions = 0;
+
+  for (let i = 0; i < matchedSequenceA.length; i += 1) {
+    if (matchedSequenceA[i] !== matchedSequenceB[i]) {
+      transpositions += 1;
+    }
+  }
+
+  transpositions /= 2;
+
+  return (
+    matches / lenA +
+    matches / lenB +
+    (matches - transpositions) / matches
+  ) / 3;
+}
+
+//COMMON PREFIX LENGTH (JARO-WINKLER)
+function commonPrefixLength(sequenceA, sequenceB, maxPrefixLength = 4) {
+  const limit = Math.min(maxPrefixLength, sequenceA.length, sequenceB.length);
+
+  for (let index = 0; index < limit; index += 1) {
+    if (sequenceA[index] !== sequenceB[index]) {
+      return index;
+    }
+  }
+
+  return limit;
+}
+
+//JARO-WINKER SIMILARITY
+function jaroWinklerSimilarity(
+  sequenceA,
+  sequenceB,
+  prefixScale = 0.1,
+  maxPrefixLength = 4,
+) {
+  const jaro = jaroSimilarity(sequenceA, sequenceB);
+  const prefixLength = commonPrefixLength(sequenceA, sequenceB, maxPrefixLength);
+  const safePrefixScale = Math.min(Math.max(prefixScale, 0), 0.25);
+
+  return jaro + prefixLength * safePrefixScale * (1 - jaro);
+}
+
+//LCS Length
 function lcsLength(sequenceA, sequenceB) {
   const lenA = sequenceA.length;
   const lenB = sequenceB.length;
@@ -277,13 +465,7 @@ function lcsRatio(sequenceA, sequenceB) {
   return lcsLength(sequenceA, sequenceB) / maxLength;
 }
 
-/*
-  ============================================================
-  N-GRAM SIMILARITY
-  ============================================================
-*/
-
-function ngrams(sequence, n = 5) {
+function ngrams(sequence, n = 2) {
   if (sequence.length === 0) {
     return [];
   }
@@ -301,57 +483,80 @@ function ngrams(sequence, n = 5) {
   return grams;
 }
 
-function ngramSimilarity(sequenceA, sequenceB, n = 5) {
+function ngramSimilarities(sequenceA, sequenceB, n = 2) {
   const setA = sequenceToSet(ngrams(sequenceA, n));
   const setB = sequenceToSet(ngrams(sequenceB, n));
 
-  return jaccardSimilarity(setA, setB);
+  return {
+    ngramJaccardSimilarity: jaccardSimilarity(setA, setB),
+    ngramDiceSimilarity: diceSimilarity(setA, setB),
+  };
 }
 
-/*
-  ============================================================
-  COSINE SIMILARITY
-  ============================================================
-*/
+function manhattanDistance(vectorA, vectorB) {
+  let distance = 0;
 
-function cosineSimilarity(sequenceA, sequenceB) {
-  const freqA = frequencyMap(sequenceA);
-  const freqB = frequencyMap(sequenceB);
-  const keys = vectorKeys(freqA, freqB);
+  for (let i = 0; i < vectorA.length; i += 1) {
+    distance += Math.abs(vectorA[i] - vectorB[i]);
+  }
 
-  if (keys.length === 0) {
+  return distance;
+}
+
+function euclideanDistance(vectorA, vectorB) {
+  let sum = 0;
+
+  for (let i = 0; i < vectorA.length; i += 1) {
+    const diff = vectorA[i] - vectorB[i];
+    sum += diff * diff;
+  }
+
+  return Math.sqrt(sum);
+}
+
+function minkowskiDistance(vectorA, vectorB, p = 3) {
+  let sum = 0;
+
+  for (let i = 0; i < vectorA.length; i += 1) {
+    sum += Math.abs(vectorA[i] - vectorB[i]) ** p;
+  }
+
+  return sum ** (1 / p);
+}
+
+function chebyshevDistance(vectorA, vectorB) {
+  let maxDifference = 0;
+
+  for (let i = 0; i < vectorA.length; i += 1) {
+    maxDifference = Math.max(maxDifference, Math.abs(vectorA[i] - vectorB[i]));
+  }
+
+  return maxDifference;
+}
+
+function gaussianSimilarity(distance, sigma) {
+  if (distance === 0) {
     return 1;
   }
 
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (const key of keys) {
-    const a = freqA.get(key) ?? 0;
-    const b = freqB.get(key) ?? 0;
-
-    dot += a * b;
-    normA += a * a;
-    normB += b * b;
-  }
-
-  if (normA === 0 && normB === 0) {
-    return 1;
-  }
-
-  if (normA === 0 || normB === 0) {
+  if (!Number.isFinite(sigma) || sigma <= 0) {
     return 0;
   }
 
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+  return Math.exp(-(distance * distance) / (2 * sigma * sigma));
 }
 
-/*
-  ============================================================
-  LENGTH RATIO / VOCABULARY RATIO
-  ============================================================
-*/
+function sigmaForDistance(distance, configuredSigma) {
+  if (configuredSigma !== "auto") {
+    return configuredSigma;
+  }
+
+  if (distance === 0) {
+    return 1;
+  }
+
+  return 0.85 * distance;
+}
 
 function lengthRatio(sequenceA, sequenceB) {
   const maxLength = Math.max(sequenceA.length, sequenceB.length);
@@ -375,13 +580,65 @@ function vocabularyRatio(setA, setB) {
 
 /*
   ============================================================
+  AST NORMALIZADO  (identificadores abstraídos → "ID")
+  ============================================================
+*/
+
+function astNodeSequence(node) {
+  if (!node || typeof node !== "object") return [];
+  if (Array.isArray(node)) {
+    const seq = [];
+    for (const child of node) seq.push(...astNodeSequence(child));
+    return seq;
+  }
+  if (typeof node.type !== "string") return [];
+  const seq = [node.type];
+  for (const key of Object.keys(node)) {
+    if (key === "type") continue;
+    const child = node[key];
+    if (child && typeof child === "object") seq.push(...astNodeSequence(child));
+  }
+  return seq;
+}
+
+function normalizedASTSequence(filePath) {
+  try {
+    const source = fs.readFileSync(filePath, "utf-8");
+    const ast    = buildAST(source);
+    const norm   = normalizeAST(ast, "abstract");
+    return astNodeSequence(norm);
+  } catch (_) {
+    return [];
+  }
+}
+
+function astSimilarities(seqA, seqB) {
+  if (seqA.length === 0 && seqB.length === 0) {
+    return { normASTJaccard: 1, normASTLCSRatio: 1, normASTCosine: 1 };
+  }
+  if (seqA.length === 0 || seqB.length === 0) {
+    return { normASTJaccard: 0, normASTLCSRatio: 0, normASTCosine: 0 };
+  }
+  const setA = sequenceToSet(seqA);
+  const setB = sequenceToSet(seqB);
+  return {
+    normASTJaccard:  jaccardSimilarity(setA, setB),
+    normASTLCSRatio: lcsRatio(seqA, seqB),
+    normASTCosine:   cosineSimilarity(seqA, seqB),
+  };
+}
+
+/*
+  ============================================================
   COMPARACION ENTRE DOS ARCHIVOS
   ============================================================
 */
 
 function compareTwoFiles(fileA, fileB, options = {}) {
-  const mode = options.mode ?? MODE;
-  const ngramSize = options.ngramSize ?? NGRAM_SIZE;
+  const mode = options.mode ?? "type";
+  const ngramSize = options.ngramSize ?? 2;
+  const minkowskiP = options.minkowskiP ?? 3;
+  const configuredSigma = options.sigma ?? "auto";
 
   assertValidMode(mode);
 
@@ -389,7 +646,7 @@ function compareTwoFiles(fileA, fileB, options = {}) {
   const normalizedFileB = normalizePath(fileB);
 
   assertFileExists(normalizedFileA, "codigo base");
-  assertFileExists(normalizedFileB, "codigo comparado");
+  assertFileExists(normalizedFileB, "codigo clon");
 
   const sequenceA = tokenizeAsSequence(normalizedFileA, mode);
   const sequenceB = tokenizeAsSequence(normalizedFileB, mode);
@@ -397,35 +654,98 @@ function compareTwoFiles(fileA, fileB, options = {}) {
   const setA = sequenceToSet(sequenceA);
   const setB = sequenceToSet(sequenceB);
 
+  const { vectorA, vectorB } = binaryVectorsFromSets(setA, setB);
+
+  const levenshtein = levenshteinDistance(sequenceA, sequenceB);
+  const lcsDist = lcsDistance(sequenceA, sequenceB);
+
+  const manhattan = manhattanDistance(vectorA, vectorB);
+  const euclidean = euclideanDistance(vectorA, vectorB);
+  const minkowski = minkowskiDistance(vectorA, vectorB, minkowskiP);
+  const chebyshev = chebyshevDistance(vectorA, vectorB);
+
+  const gaussianManhattanSigma = sigmaForDistance(manhattan, configuredSigma);
+  const gaussianEuclideanSigma = sigmaForDistance(euclidean, configuredSigma);
+  const gaussianMinkowskiSigma = sigmaForDistance(minkowski, configuredSigma);
+  const gaussianChebyshevSigma = sigmaForDistance(chebyshev, configuredSigma);
+
+  // Normalized AST features (identifiers abstracted to "ID")
+  const astSeqA   = normalizedASTSequence(normalizedFileA);
+  const astSeqB   = normalizedASTSequence(normalizedFileB);
+  const astSims   = astSimilarities(astSeqA, astSeqB);
+
+  // IR-based structural features (must be computed before use in metrics/vector)
+  const irA           = buildIRFromFile(normalizedFileA);
+  const irB           = buildIRFromFile(normalizedFileB);
+  const irFeatureVec  = extractIRFeatures(irA, irB);
+  const cfgFeatureVec = extractCFGFeatures(irA, irB);
+
+  const irFeatureMap = Object.fromEntries(
+    IR_FEATURE_NAMES.map((name, i) => [name, irFeatureVec[i]])
+  );
+  const cfgFeatureMap = Object.fromEntries(
+    CFG_FEATURE_NAMES.map((name, i) => [name, cfgFeatureVec[i]])
+  );
+
   const metrics = {
     jaccardSimilarity: jaccardSimilarity(setA, setB),
     diceSimilarity: diceSimilarity(setA, setB),
 
-    levenshteinDistance: levenshteinDistance(sequenceA, sequenceB),
+    levenshteinDistance: levenshtein,
     levenshteinRatio: levenshteinRatio(sequenceA, sequenceB),
 
-    cosineSimilarity: cosineSimilarity(sequenceA, sequenceB),
+    jaroSimilarity: jaroSimilarity(sequenceA, sequenceB),
+    jaroWinklerSimilarity: jaroWinklerSimilarity(sequenceA, sequenceB),
 
-    lcsDistance: lcsDistance(sequenceA, sequenceB),
+    cosineSimilarity: cosineSimilarity(sequenceA, sequenceB),
+    overlapCoefficient: overlapCoefficient(setA, setB),
+
+    lcsDistance: lcsDist,
     lcsRatio: lcsRatio(sequenceA, sequenceB),
 
-    ngramSimilarity: ngramSimilarity(sequenceA, sequenceB, ngramSize),
+    ...ngramSimilarities(sequenceA, sequenceB, ngramSize),
+
+    manhattanDistance: manhattan,
+    euclideanDistance: euclidean,
+    minkowskiDistance: minkowski,
+    chebyshevDistance: chebyshev,
+
+    gaussianManhattanSimilarity: gaussianSimilarity(manhattan, gaussianManhattanSigma),
+    gaussianEuclideanSimilarity: gaussianSimilarity(euclidean, gaussianEuclideanSigma),
+    gaussianMinkowskiSimilarity: gaussianSimilarity(minkowski, gaussianMinkowskiSigma),
+    gaussianChebyshevSimilarity: gaussianSimilarity(chebyshev, gaussianChebyshevSigma),
 
     lengthRatio: lengthRatio(sequenceA, sequenceB),
     vocabularyRatio: vocabularyRatio(setA, setB),
+    ...irFeatureMap,
+    normASTJaccard:  astSims.normASTJaccard,
+    normASTLCSRatio: astSims.normASTLCSRatio,
+    normASTCosine:   astSims.normASTCosine,
+    ...cfgFeatureMap,
   };
 
   const similarityFeatureVector = [
     metrics.jaccardSimilarity,
     metrics.diceSimilarity,
-    metrics.levenshteinDistance,
     metrics.levenshteinRatio,
+    metrics.jaroSimilarity,
+    metrics.jaroWinklerSimilarity,
     metrics.cosineSimilarity,
-    metrics.lcsDistance,
+    metrics.overlapCoefficient,
     metrics.lcsRatio,
-    metrics.ngramSimilarity,
+    metrics.ngramJaccardSimilarity,
+    metrics.ngramDiceSimilarity,
+    metrics.gaussianManhattanSimilarity,
+    metrics.gaussianEuclideanSimilarity,
+    metrics.gaussianMinkowskiSimilarity,
+    metrics.gaussianChebyshevSimilarity,
     metrics.lengthRatio,
     metrics.vocabularyRatio,
+    ...irFeatureVec,
+    metrics.normASTJaccard,
+    metrics.normASTLCSRatio,
+    metrics.normASTCosine,
+    ...cfgFeatureVec,
   ];
 
   return {
@@ -434,6 +754,8 @@ function compareTwoFiles(fileA, fileB, options = {}) {
     mode,
     parameters: {
       ngramSize,
+      minkowskiP,
+      sigma: configuredSigma,
     },
     tokenStats: {
       fileATokenCount: sequenceA.length,
@@ -448,7 +770,7 @@ function compareTwoFiles(fileA, fileB, options = {}) {
 
 /*
   ============================================================
-  COMPARACION DE UN CODIGO BASE CONTRA CLONES
+  COMPARACION DE UN CODIGO BASE CONTRA LOS 4 CLONES DE OTRO CODIGO
   ============================================================
 */
 
@@ -474,6 +796,8 @@ function compareBaseCodeWithCloneGroup(baseCodeId, cloneCodeId, options = {}) {
     const comparison = compareTwoFiles(baseCodePath, clonePath, {
       mode: options.mode ?? MODE,
       ngramSize: options.ngramSize ?? NGRAM_SIZE,
+      minkowskiP: options.minkowskiP ?? MINKOWSKI_P,
+      sigma: options.sigma ?? SIGMA,
     });
 
     return {
@@ -482,6 +806,7 @@ function compareBaseCodeWithCloneGroup(baseCodeId, cloneCodeId, options = {}) {
       cloneType,
       baseCode: baseCodePath,
       cloneCode: clonePath,
+
       vector: comparison.vector,
       metrics: comparison.metrics,
       tokenStats: comparison.tokenStats,
@@ -505,11 +830,7 @@ function compareBaseCodeWithCloneGroup(baseCodeId, cloneCodeId, options = {}) {
   ============================================================
 */
 
-const MODE_MAP = {
-  1: "type",
-  2: "value",
-  3: "type-value",
-};
+const MODE_MAP = { 1: "type", 2: "value", 3: "type-value" };
 
 function vectorize(O, CA, T, options = {}) {
   const mode = MODE_MAP[T];
@@ -520,36 +841,17 @@ function vectorize(O, CA, T, options = {}) {
 
   const opts = { ...options, mode };
 
-  const ownGroup = compareBaseCodeWithCloneGroup(O, O, opts);
+  const ownGroup     = compareBaseCodeWithCloneGroup(O, O,  opts);
   const foreignGroup = compareBaseCodeWithCloneGroup(O, CA, opts);
 
-  const ownClones = ownGroup.results.map((result) => ({
-    ...result,
-    isClone: true,
-  }));
-
-  const foreignClones = foreignGroup.results.map((result) => ({
-    ...result,
-    isClone: false,
-  }));
+  const ownClones     = ownGroup.results.map((r)     => ({ ...r, isClone: true  }));
+  const foreignClones = foreignGroup.results.map((r) => ({ ...r, isClone: false }));
 
   return {
     O,
     CA,
     mode,
     datasetRoot: ownGroup.datasetRoot,
-    vectorDescription: [
-      "jaccardSimilarity",
-      "diceSimilarity",
-      "levenshteinDistance",
-      "levenshteinRatio",
-      "cosineSimilarity",
-      "lcsDistance",
-      "lcsRatio",
-      "ngramSimilarity",
-      "lengthRatio",
-      "vocabularyRatio",
-    ],
     results: [...ownClones, ...foreignClones],
   };
 }
@@ -560,86 +862,15 @@ function vectorize(O, CA, T, options = {}) {
   ============================================================
 */
 
-function printUsage() {
-  console.error(`
-Uso para comparar dos archivos:
-  node Vectorization/similarity.js archivoA.js archivoB.js [modo]
-
-Modos:
-  1 = type
-  2 = value
-  3 = type-value
-
-Ejemplo:
-  node Vectorization/similarity.js problem_original.js problem_1.js 3
-
-Uso para vectorizar dataset:
-  node Vectorization/similarity.js --dataset [O] [CA] [modo]
-
-Ejemplo:
-  node Vectorization/similarity.js --dataset 1 1 3
-`);
-}
-
-function parseVectorizeMode(modeArg) {
-  const modeNumber = Number(modeArg ?? VECTORIZE_MODE);
-
-  if (!MODE_MAP[modeNumber]) {
-    throw new Error(
-      `Modo invalido: ${modeArg}. Usa 1 (type), 2 (value) o 3 (type-value).`
-    );
-  }
-
-  return modeNumber;
-}
-
 function main() {
-  const args = process.argv.slice(2);
+  const result = vectorize(1000, 1001, VECTORIZE_MODE, {
+    datasetRoot: DATASET_ROOT,
+    ngramSize: NGRAM_SIZE,
+    minkowskiP: MINKOWSKI_P,
+    sigma: SIGMA,
+  });
 
-  try {
-    /*
-      Modo dataset:
-      node similarity.js --dataset 1 1 3
-    */
-    if (args[0] === "--dataset") {
-      const O = Number(args[1] ?? BASE_CODE_ID);
-      const CA = Number(args[2] ?? CLONE_CODE_ID);
-      const vectorizeMode = parseVectorizeMode(args[3] ?? VECTORIZE_MODE);
-
-      const result = vectorize(O, CA, vectorizeMode, {
-        datasetRoot: DATASET_ROOT,
-        ngramSize: NGRAM_SIZE,
-      });
-
-      console.log(JSON.stringify(result, null, 2));
-      return;
-    }
-
-    /*
-      Modo prediccion individual:
-      node similarity.js archivoA.js archivoB.js 3
-    */
-    const fileA = args[0];
-    const fileB = args[1];
-
-    if (!fileA || !fileB) {
-      printUsage();
-      process.exit(1);
-    }
-
-    const vectorizeMode = parseVectorizeMode(args[2] ?? VECTORIZE_MODE);
-    const mode = MODE_MAP[vectorizeMode];
-
-    const result = compareTwoFiles(fileA, fileB, {
-      mode,
-      ngramSize: NGRAM_SIZE,
-    });
-
-    console.log(JSON.stringify(result, null, 2));
-  } catch (error) {
-    console.error(error.message);
-    process.exit(1);
-  }
+  console.log(JSON.stringify(result, null, 2));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -657,11 +888,23 @@ export {
   levenshteinDistance,
   levenshteinRatio,
 
+  jaroSimilarity,
+  jaroWinklerSimilarity,
+
+  cosineSimilarity,
+  overlapCoefficient,
+
   lcsDistance,
   lcsRatio,
 
-  ngramSimilarity,
-  cosineSimilarity,
+  ngramSimilarities,
+
+  manhattanDistance,
+  euclideanDistance,
+  minkowskiDistance,
+  chebyshevDistance,
+
+  gaussianSimilarity,
 
   lengthRatio,
   vocabularyRatio,
